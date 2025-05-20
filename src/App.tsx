@@ -4,8 +4,17 @@ import './App.css'
 import logo from './assets/G2C_logo_azul.png'
 import Swal from 'sweetalert2'
 
+interface Dependente {
+  nome: string;
+  cpf: string;
+  dataNascimento: string;
+  municipioNascimento: string;
+  tipoDependente: string;
+  possuiOutroDependente: string;
+}
+
 interface FormData {
-  [key: string]: string | File | null;
+  [key: string]: string | File | null | boolean | Dependente[];
   nomeEmpresa: string;
   nomeResponsavel: string;
   nome: string;
@@ -48,6 +57,11 @@ interface FormData {
   tipoChavePix: string;
   chavePix: string;
   observacoesBancarias: string;
+  possuiDependentes: boolean;
+  dependentes: Dependente[];
+  nomeConjuge: string;
+  cpfConjuge: string;
+  dataNascimentoConjuge: string;
 }
 
 function App() {
@@ -94,7 +108,12 @@ function App() {
     tipoConta: '',
     tipoChavePix: '',
     chavePix: '',
-    observacoesBancarias: ''
+    observacoesBancarias: '',
+    possuiDependentes: false,
+    dependentes: [],
+    nomeConjuge: '',
+    cpfConjuge: '',
+    dataNascimentoConjuge: ''
   })
 
   useEffect(() => {
@@ -193,17 +212,101 @@ function App() {
     return true; // Sempre retorna true, permitindo avançar independente do preenchimento
   }
 
+  const validatePage5 = () => {
+    if (formData.possuiDependentes === undefined) {
+      Swal.fire({
+        title: 'Campo Obrigatório',
+        html: 'Por favor, responda se possui dependentes para fins de Salário Família e/ou Dedução de IR.',
+        icon: 'warning',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#646cff'
+      })
+      return false
+    }
+    return true
+  }
+
+  const validateDependentePage = (index: number) => {
+    const dependente = formData.dependentes[index]
+    if (!dependente?.nome || !dependente?.cpf || !dependente?.dataNascimento || 
+        !dependente?.municipioNascimento || !dependente?.tipoDependente || 
+        !dependente?.possuiOutroDependente) {
+      Swal.fire({
+        title: 'Campos Obrigatórios',
+        html: 'Por favor, preencha todos os campos obrigatórios do dependente.',
+        icon: 'warning',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#646cff'
+      })
+      return false
+    }
+    return true
+  }
+
   const handleNext = () => {
     if (currentPage === 1 && !validatePage1()) return
     if (currentPage === 2 && !validatePage2()) return
     if (currentPage === 3 && !validatePage3()) return
     if (currentPage === 4 && !validatePage4()) return
-    setCurrentPage(prev => prev + 1)
+    if (currentPage === 5 && !validatePage5()) return
+    if (currentPage >= 6 && !validateDependentePage(currentPage - 6)) return
+
+    // Lógica para determinar a próxima página
+    if (currentPage === 5) {
+      if (formData.possuiDependentes === true) {
+        // Inicializa o primeiro dependente
+        const novosDependentes = [{
+          nome: '',
+          cpf: '',
+          dataNascimento: '',
+          municipioNascimento: '',
+          tipoDependente: '',
+          possuiOutroDependente: ''
+        }]
+        setFormData(prev => ({ ...prev, dependentes: novosDependentes }))
+        setCurrentPage(6) // Página do primeiro dependente
+      } else if (formData.possuiDependentes === false) {
+        setCurrentPage(8) // Página do cônjuge
+      }
+    } else if (currentPage >= 6) {
+      const dependenteAtual = formData.dependentes[currentPage - 6]
+      if (dependenteAtual?.possuiOutroDependente === 'Sim') {
+        // Cria uma nova página de dependente
+        const novosDependentes = [...formData.dependentes]
+        novosDependentes[currentPage - 5] = {
+          nome: '',
+          cpf: '',
+          dataNascimento: '',
+          municipioNascimento: '',
+          tipoDependente: '',
+          possuiOutroDependente: ''
+        }
+        setFormData(prev => ({ ...prev, dependentes: novosDependentes }))
+        setCurrentPage(currentPage + 1)
+      } else {
+        setCurrentPage(8) // Página do cônjuge
+      }
+    } else {
+      setCurrentPage(prev => prev + 1)
+    }
   }
 
   const handleBack = () => {
     if (currentPage > 1) {
-      setCurrentPage(prev => prev - 1)
+      if (currentPage === 8) {
+        // Se estiver na página do cônjuge, volta para a última página de dependente ou página 5
+        if (formData.possuiDependentes) {
+          setCurrentPage(6 + formData.dependentes.length - 1)
+        } else {
+          setCurrentPage(5)
+        }
+      } else if (currentPage >= 6) {
+        // Se estiver em uma página de dependente, volta para a página anterior
+        setCurrentPage(prev => prev - 1)
+      } else {
+        // Para outras páginas, volta normalmente
+        setCurrentPage(prev => prev - 1)
+      }
     }
   }
 
@@ -261,7 +364,12 @@ function App() {
           tipoConta: '',
           tipoChavePix: '',
           chavePix: '',
-          observacoesBancarias: ''
+          observacoesBancarias: '',
+          possuiDependentes: false,
+          dependentes: [],
+          nomeConjuge: '',
+          cpfConjuge: '',
+          dataNascimentoConjuge: ''
         })
         setCurrentPage(1)
         Swal.fire({
@@ -274,6 +382,25 @@ function App() {
         })
       }
     })
+  }
+
+  const handleDependenteChange = (index: number, field: keyof Dependente, value: string) => {
+    const novosDependentes = [...formData.dependentes]
+    if (!novosDependentes[index]) {
+      novosDependentes[index] = {
+        nome: '',
+        cpf: '',
+        dataNascimento: '',
+        municipioNascimento: '',
+        tipoDependente: '',
+        possuiOutroDependente: ''
+      }
+    }
+    novosDependentes[index] = {
+      ...novosDependentes[index],
+      [field]: value
+    }
+    setFormData(prev => ({ ...prev, dependentes: novosDependentes }))
   }
 
   // Página 1 - Dados da Empresa
@@ -896,7 +1023,7 @@ function App() {
               Voltar
             </button>
             <button type="button" className="next-button" onClick={handleNext}>
-              Enviar
+              Próximo
               <span className="button-arrow">→</span>
             </button>
           </div>
@@ -1011,7 +1138,225 @@ function App() {
               Voltar
             </button>
             <button type="button" className="next-button" onClick={handleNext}>
-              Enviar
+              Próximo
+              <span className="button-arrow">→</span>
+            </button>
+          </div>
+          <button type="button" className="clear-button" onClick={handleClear}>
+            Limpar
+          </button>
+        </div>
+      </div>
+    </>
+  )
+
+  // Página 5 - Dependentes
+  const renderPage5 = () => (
+    <>
+      <p className="required-field">* Indica uma pergunta obrigatória</p>
+      
+      <div className="form-group">
+        <label className="checkbox-label">
+          Possui Dependentes para fins de Salário Família e/ou Dedução de IR?<span className="required-mark">*</span>
+        </label>
+        <div className="checkbox-group">
+          <label className="checkbox-option">
+            <input
+              type="radio"
+              name="possuiDependentes"
+              checked={formData.possuiDependentes === true}
+              onChange={() => setFormData(prev => ({ ...prev, possuiDependentes: true }))}
+            />
+            Sim
+          </label>
+          <label className="checkbox-option">
+            <input
+              type="radio"
+              name="possuiDependentes"
+              checked={formData.possuiDependentes === false}
+              onChange={() => setFormData(prev => ({ ...prev, possuiDependentes: false }))}
+            />
+            Não
+          </label>
+        </div>
+      </div>
+
+      <div className="button-container">
+        <div className="button-group">
+          <div className="button-group-left">
+            <button 
+              type="button" 
+              className="back-button" 
+              onClick={handleBack}
+            >
+              <span style={{ fontSize: '1.2rem' }}>←</span>
+              Voltar
+            </button>
+            <button type="button" className="next-button" onClick={handleNext}>
+              Próximo
+              <span className="button-arrow">→</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  )
+
+  const renderDependentePage = (index: number) => (
+    <>
+      <p className="required-field">* Indica uma pergunta obrigatória</p>
+      
+      <div className="form-group">
+        <label htmlFor={`dependenteNome${index}`}>Nome do Dependente<span className="required-mark">*</span></label>
+        <input
+          type="text"
+          id={`dependenteNome${index}`}
+          className="form-input"
+          value={formData.dependentes[index]?.nome || ''}
+          onChange={(e) => handleDependenteChange(index, 'nome', e.target.value)}
+          placeholder="Digite o nome completo do dependente"
+        />
+      </div>
+
+      <div className="form-group">
+        <label htmlFor={`dependenteCpf${index}`}>CPF do Dependente<span className="required-mark">*</span></label>
+        <input
+          type="text"
+          id={`dependenteCpf${index}`}
+          className="form-input"
+          value={formData.dependentes[index]?.cpf || ''}
+          onChange={(e) => handleDependenteChange(index, 'cpf', e.target.value)}
+          placeholder="000.000.000-00"
+        />
+      </div>
+
+      <div className="form-group">
+        <label htmlFor={`dependenteDataNascimento${index}`}>Data de Nascimento do Dependente<span className="required-mark">*</span></label>
+        <input
+          type="date"
+          id={`dependenteDataNascimento${index}`}
+          className="form-input"
+          value={formData.dependentes[index]?.dataNascimento || ''}
+          onChange={(e) => handleDependenteChange(index, 'dataNascimento', e.target.value)}
+        />
+      </div>
+
+      <div className="form-group">
+        <label htmlFor={`dependenteMunicipio${index}`}>Município/UF de Nascimento do Dependente<span className="required-mark">*</span></label>
+        <input
+          type="text"
+          id={`dependenteMunicipio${index}`}
+          className="form-input"
+          value={formData.dependentes[index]?.municipioNascimento || ''}
+          onChange={(e) => handleDependenteChange(index, 'municipioNascimento', e.target.value)}
+          placeholder="Digite o município e UF de nascimento"
+        />
+      </div>
+
+      <div className="form-group">
+        <label htmlFor={`dependenteTipo${index}`}>Dependente para Salário Família e Imposto de Renda?<span className="required-mark">*</span></label>
+        <select
+          id={`dependenteTipo${index}`}
+          className="form-input"
+          value={formData.dependentes[index]?.tipoDependente || ''}
+          onChange={(e) => handleDependenteChange(index, 'tipoDependente', e.target.value)}
+        >
+          <option value="">Selecione</option>
+          <option value="salario_familia">Sim - Somente salário família</option>
+          <option value="imposto_renda">Sim - Somente para Imposto de Renda</option>
+          <option value="ambos">Sim - Dependente de salário família e imposto de renda</option>
+        </select>
+      </div>
+
+      <div className="form-group">
+        <label htmlFor={`possuiOutroDependente${index}`}>Possui outro Dependentes para fins de Salário Família e/ou Dedução de IR?<span className="required-mark">*</span></label>
+        <select
+          id={`possuiOutroDependente${index}`}
+          className="form-input"
+          value={formData.dependentes[index]?.possuiOutroDependente || ''}
+          onChange={(e) => handleDependenteChange(index, 'possuiOutroDependente', e.target.value)}
+        >
+          <option value="">Selecione</option>
+          <option value="Sim">Sim</option>
+          <option value="Não">Não</option>
+        </select>
+      </div>
+
+      <div className="button-container">
+        <div className="button-group">
+          <div className="button-group-left">
+            <button 
+              type="button" 
+              className="back-button" 
+              onClick={handleBack}
+            >
+              <span style={{ fontSize: '1.2rem' }}>←</span>
+              Voltar
+            </button>
+            <button type="button" className="next-button" onClick={handleNext}>
+              Próximo
+              <span className="button-arrow">→</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  )
+
+  // Página 8 - Dados do Cônjuge
+  const renderPage8 = () => (
+    <>
+      <div className="form-group">
+        <label htmlFor="nomeConjuge">Nome Completo do Cônjuge</label>
+        <input
+          type="text"
+          id="nomeConjuge"
+          name="nomeConjuge"
+          className="form-input"
+          value={formData.nomeConjuge}
+          onChange={handleInputChange}
+          placeholder="Digite o nome completo do cônjuge"
+        />
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="cpfConjuge">CPF do Cônjuge</label>
+        <input
+          type="text"
+          id="cpfConjuge"
+          name="cpfConjuge"
+          className="form-input"
+          value={formData.cpfConjuge}
+          onChange={handleInputChange}
+          placeholder="000.000.000-00"
+        />
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="dataNascimentoConjuge">Data de Nascimento do Cônjuge</label>
+        <input
+          type="date"
+          id="dataNascimentoConjuge"
+          name="dataNascimentoConjuge"
+          className="form-input"
+          value={formData.dataNascimentoConjuge}
+          onChange={handleInputChange}
+        />
+      </div>
+
+      <div className="button-container">
+        <div className="button-group">
+          <div className="button-group-left">
+            <button 
+              type="button" 
+              className="back-button" 
+              onClick={handleBack}
+            >
+              <span style={{ fontSize: '1.2rem' }}>←</span>
+              Voltar
+            </button>
+            <button type="button" className="next-button" onClick={handleNext}>
+              Próximo
               <span className="button-arrow">→</span>
             </button>
           </div>
@@ -1035,6 +1380,9 @@ function App() {
           {currentPage === 2 && renderPage2()}
           {currentPage === 3 && renderPage3()}
           {currentPage === 4 && renderPage4()}
+          {currentPage === 5 && renderPage5()}
+          {currentPage >= 6 && currentPage < 8 && renderDependentePage(currentPage - 6)}
+          {currentPage === 8 && renderPage8()}
         </form>
       </div>
       <footer className="footer">
