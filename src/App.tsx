@@ -9,6 +9,7 @@ interface Dependente {
   cpf: string;
   dataNascimento: string;
   municipioNascimento: string;
+  ufNascimento: string;
   tipoDependente: string;
   possuiOutroDependente: string;
 }
@@ -62,7 +63,66 @@ interface FormData {
   nomeConjuge: string;
   cpfConjuge: string;
   dataNascimentoConjuge: string;
+  responsavelPreenchimento: string;
+  cargoFuncao: string;
+  salario: string;
+  dataAdmissao: string;
+  optanteValeTransporte: string;
+  valorPassagem: string;
+  nomeResponsavelPreenchimento: string;
+  periodoExperiencia: string;
+  jornadaTrabalho: string;
+  jornadaParcial: string;
+  adicionalPericulosidade: string;
+  adicionalInsalubridade: string;
+  quantidadePassagem: string;
+  valeCombustivel: string;
+  valorValeCombustivel: string;
+  tipoDescontoCombustivel: string;
+  valorDescontoCombustivel: string;
+  concordaTermos: boolean;
+  declaraInformacoes: boolean;
+  documentoIdentidade: File | null;
 }
+
+// Lista de estados brasileiros
+const estados = [
+  { sigla: 'AC', nome: 'Acre' },
+  { sigla: 'AL', nome: 'Alagoas' },
+  { sigla: 'AP', nome: 'Amapá' },
+  { sigla: 'AM', nome: 'Amazonas' },
+  { sigla: 'BA', nome: 'Bahia' },
+  { sigla: 'CE', nome: 'Ceará' },
+  { sigla: 'DF', nome: 'Distrito Federal' },
+  { sigla: 'ES', nome: 'Espírito Santo' },
+  { sigla: 'GO', nome: 'Goiás' },
+  { sigla: 'MA', nome: 'Maranhão' },
+  { sigla: 'MT', nome: 'Mato Grosso' },
+  { sigla: 'MS', nome: 'Mato Grosso do Sul' },
+  { sigla: 'MG', nome: 'Minas Gerais' },
+  { sigla: 'PA', nome: 'Pará' },
+  { sigla: 'PB', nome: 'Paraíba' },
+  { sigla: 'PR', nome: 'Paraná' },
+  { sigla: 'PE', nome: 'Pernambuco' },
+  { sigla: 'PI', nome: 'Piauí' },
+  { sigla: 'RJ', nome: 'Rio de Janeiro' },
+  { sigla: 'RN', nome: 'Rio Grande do Norte' },
+  { sigla: 'RS', nome: 'Rio Grande do Sul' },
+  { sigla: 'RO', nome: 'Rondônia' },
+  { sigla: 'RR', nome: 'Roraima' },
+  { sigla: 'SC', nome: 'Santa Catarina' },
+  { sigla: 'SP', nome: 'São Paulo' },
+  { sigla: 'SE', nome: 'Sergipe' },
+  { sigla: 'TO', nome: 'Tocantins' }
+];
+
+// Exemplo de municípios por estado (você pode expandir esta lista)
+const municipiosPorEstado: { [key: string]: string[] } = {
+  'SP': ['São Paulo', 'Campinas', 'Santos', 'São Bernardo do Campo', 'São José dos Campos'],
+  'RJ': ['Rio de Janeiro', 'Niterói', 'Nova Iguaçu', 'São Gonçalo', 'Duque de Caxias'],
+  'MG': ['Belo Horizonte', 'Uberlândia', 'Contagem', 'Juiz de Fora', 'Betim'],
+  // Adicione mais estados e seus municípios conforme necessário
+};
 
 function App() {
   const [currentPage, setCurrentPage] = useState(1)
@@ -113,15 +173,115 @@ function App() {
     dependentes: [],
     nomeConjuge: '',
     cpfConjuge: '',
-    dataNascimentoConjuge: ''
+    dataNascimentoConjuge: '',
+    responsavelPreenchimento: '',
+    cargoFuncao: '',
+    salario: '',
+    dataAdmissao: '',
+    optanteValeTransporte: '',
+    valorPassagem: '',
+    nomeResponsavelPreenchimento: '',
+    periodoExperiencia: '',
+    jornadaTrabalho: '',
+    jornadaParcial: '',
+    adicionalPericulosidade: '',
+    adicionalInsalubridade: '',
+    quantidadePassagem: '',
+    valeCombustivel: '',
+    valorValeCombustivel: '',
+    tipoDescontoCombustivel: '',
+    valorDescontoCombustivel: '',
+    concordaTermos: false,
+    declaraInformacoes: false,
+    documentoIdentidade: null
   })
 
   useEffect(() => {
     setCurrentPage(1)
   }, [])
 
+  const formatarData = (value: string) => {
+    // Remove todos os caracteres não numéricos
+    const numbers = value.replace(/\D/g, '')
+    
+    // Limita a 8 dígitos (DDMMAAAA)
+    const limitedNumbers = numbers.slice(0, 8)
+    
+    // Aplica a máscara
+    if (limitedNumbers.length <= 2) {
+      return limitedNumbers
+    } else if (limitedNumbers.length <= 4) {
+      return `${limitedNumbers.slice(0, 2)}/${limitedNumbers.slice(2)}`
+    } else {
+      return `${limitedNumbers.slice(0, 2)}/${limitedNumbers.slice(2, 4)}/${limitedNumbers.slice(4)}`
+    }
+  }
+
+  const formatarMoeda = (value: string) => {
+    // Remove todos os caracteres não numéricos
+    const numbers = value.replace(/\D/g, '')
+    
+    // Converte para número e divide por 100 para ter os centavos
+    const amount = Number(numbers) / 100
+    
+    // Formata o número como moeda
+    return amount.toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })
+  }
+
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, files } = e.target as HTMLInputElement
+
+    // Aplicar máscaras para telefone, celular e CPF
+    if (name === 'telefone' || name === 'celular' || name === 'cpf') {
+      // Remove todos os caracteres não numéricos
+      const numbers = value.replace(/\D/g, '')
+      
+      // Aplica a máscara apropriada
+      let maskedValue = ''
+      if (name === 'telefone') {
+        if (numbers.length <= 10) {
+          maskedValue = numbers.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3')
+        } else {
+          maskedValue = numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')
+        }
+      } else if (name === 'celular') {
+        maskedValue = numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')
+      } else if (name === 'cpf') {
+        // Limita a 11 dígitos
+        const cpfNumbers = numbers.slice(0, 11)
+        maskedValue = cpfNumbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        [name]: maskedValue
+      }))
+      return
+    }
+
+    // Aplicar máscara para campos de data
+    if (name.includes('data')) {
+      const formattedDate = formatarData(value)
+      setFormData(prev => ({
+        ...prev,
+        [name]: formattedDate
+      }))
+      return
+    }
+
+    // Aplicar máscara para campos monetários
+    if (name === 'salario' || name === 'valorPassagem') {
+      const formattedValue = formatarMoeda(value)
+      setFormData(prev => ({
+        ...prev,
+        [name]: formattedValue
+      }))
+      return
+    }
+
     setFormData(prev => ({
       ...prev,
       [name]: files ? files[0] : value
@@ -179,6 +339,19 @@ function App() {
       })
       return false
     }
+
+    // Validação do email
+    if (!formData.email.includes('@')) {
+      Swal.fire({
+        title: 'Email Inválido',
+        text: 'Por favor, insira um email válido contendo @',
+        icon: 'warning',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#646cff'
+      })
+      return false
+    }
+
     return true
   }
 
@@ -229,7 +402,7 @@ function App() {
   const validateDependentePage = (index: number) => {
     const dependente = formData.dependentes[index]
     if (!dependente?.nome || !dependente?.cpf || !dependente?.dataNascimento || 
-        !dependente?.municipioNascimento || !dependente?.tipoDependente || 
+        !dependente?.municipioNascimento || !dependente?.ufNascimento || !dependente?.tipoDependente || 
         !dependente?.possuiOutroDependente) {
       Swal.fire({
         title: 'Campos Obrigatórios',
@@ -243,49 +416,199 @@ function App() {
     return true
   }
 
+  const validatePage8 = () => {
+    return true; // Sempre retorna true, permitindo avançar independente do preenchimento
+  }
+
+  const validatePage9 = () => {
+    if (!formData.responsavelPreenchimento) {
+      Swal.fire({
+        title: 'Campo Obrigatório',
+        text: 'Por favor, selecione quem é o responsável pelo preenchimento do formulário.',
+        icon: 'warning',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#646cff'
+      })
+      return false
+    }
+    return true
+  }
+
+  const validatePage10 = () => {
+    const requiredFields = {
+      cargoFuncao: 'Cargo/Função',
+      dataAdmissao: 'Data de admissão',
+      optanteValeTransporte: 'Optante de vale transporte'
+    }
+
+    const emptyFields = Object.entries(requiredFields)
+      .filter(([key]) => !formData[key])
+      .map(([_, label]) => label)
+
+    if (emptyFields.length > 0) {
+      Swal.fire({
+        title: 'Campos Obrigatórios',
+        html: `Por favor, preencha os seguintes campos:<br><br>${emptyFields.join('<br>')}`,
+        icon: 'warning',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#646cff'
+      })
+      return false
+    }
+
+    // Validação adicional para valor da passagem se for optante
+    if (formData.optanteValeTransporte === 'Sim' && !formData.valorPassagem) {
+      Swal.fire({
+        title: 'Campo Obrigatório',
+        text: 'Por favor, informe o valor da passagem.',
+        icon: 'warning',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#646cff'
+      })
+      return false
+    }
+
+    return true
+  }
+
+  const validatePage11 = () => {
+    const requiredFields = {
+      nomeResponsavelPreenchimento: 'Nome do responsável pelo preenchimento',
+      cargoFuncao: 'Cargo/Função',
+      salario: 'Salário',
+      dataAdmissao: 'Data de admissão',
+      periodoExperiencia: 'Período de Experiência',
+      jornadaTrabalho: 'Jornada de Trabalho',
+      jornadaParcial: 'Jornada Parcial',
+      adicionalPericulosidade: 'Adicional de Periculosidade',
+      adicionalInsalubridade: 'Adicional de Insalubridade',
+      optanteValeTransporte: 'Optante de vale transporte',
+      valeCombustivel: 'Vale Combustível'
+    }
+
+    const emptyFields = Object.entries(requiredFields)
+      .filter(([key]) => !formData[key])
+      .map(([_, label]) => label)
+
+    if (emptyFields.length > 0) {
+      Swal.fire({
+        title: 'Campos Obrigatórios',
+        html: `Por favor, preencha os seguintes campos:<br><br>${emptyFields.join('<br>')}`,
+        icon: 'warning',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#646cff'
+      })
+      return false
+    }
+
+    // Validações condicionais
+    if (formData.optanteValeTransporte === 'Sim') {
+      if (!formData.valorPassagem || !formData.quantidadePassagem) {
+        Swal.fire({
+          title: 'Campos Obrigatórios',
+          text: 'Por favor, preencha o valor e a quantidade de passagens.',
+          icon: 'warning',
+          confirmButtonText: 'OK',
+          confirmButtonColor: '#646cff'
+        })
+        return false
+      }
+    }
+
+    if (formData.valeCombustivel === 'Sim') {
+      if (!formData.valorValeCombustivel || !formData.tipoDescontoCombustivel || !formData.valorDescontoCombustivel) {
+        Swal.fire({
+          title: 'Campos Obrigatórios',
+          text: 'Por favor, preencha todos os campos do vale combustível.',
+          icon: 'warning',
+          confirmButtonText: 'OK',
+          confirmButtonColor: '#646cff'
+        })
+        return false
+      }
+    }
+
+    return true
+  }
+
+  const validatePage12 = () => {
+    if (!formData.concordaTermos || !formData.declaraInformacoes) {
+      Swal.fire({
+        title: 'Campos Obrigatórios',
+        text: 'Por favor, leia e concorde com os termos de uso e declare que as informações são verdadeiras.',
+        icon: 'warning',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#646cff'
+      })
+      return false
+    }
+    return true
+  }
+
   const handleNext = () => {
+    // Validações específicas para cada página
     if (currentPage === 1 && !validatePage1()) return
     if (currentPage === 2 && !validatePage2()) return
     if (currentPage === 3 && !validatePage3()) return
     if (currentPage === 4 && !validatePage4()) return
     if (currentPage === 5 && !validatePage5()) return
-    if (currentPage >= 6 && !validateDependentePage(currentPage - 6)) return
+    if (currentPage >= 6 && currentPage < 8 && !validateDependentePage(currentPage - 6)) return
+    if (currentPage === 9 && !validatePage9()) return
+    if (currentPage === 10 && !validatePage10()) return
+    if (currentPage === 11 && !validatePage11()) return
+    if (currentPage === 12 && !validatePage12()) return
 
     // Lógica para determinar a próxima página
     if (currentPage === 5) {
       if (formData.possuiDependentes === true) {
-        // Inicializa o primeiro dependente
-        const novosDependentes = [{
-          nome: '',
-          cpf: '',
-          dataNascimento: '',
-          municipioNascimento: '',
-          tipoDependente: '',
-          possuiOutroDependente: ''
-        }]
-        setFormData(prev => ({ ...prev, dependentes: novosDependentes }))
-        setCurrentPage(6) // Página do primeiro dependente
+        if (formData.dependentes.length === 0) {
+          const novosDependentes = [{
+            nome: '',
+            cpf: '',
+            dataNascimento: '',
+            municipioNascimento: '',
+            ufNascimento: '',
+            tipoDependente: '',
+            possuiOutroDependente: ''
+          }]
+          setFormData(prev => ({ ...prev, dependentes: novosDependentes }))
+        }
+        setCurrentPage(6)
       } else if (formData.possuiDependentes === false) {
-        setCurrentPage(8) // Página do cônjuge
+        setCurrentPage(8) // Vai direto para a página do cônjuge
       }
-    } else if (currentPage >= 6) {
+    } else if (currentPage >= 6 && currentPage < 8) {
       const dependenteAtual = formData.dependentes[currentPage - 6]
       if (dependenteAtual?.possuiOutroDependente === 'Sim') {
-        // Cria uma nova página de dependente
         const novosDependentes = [...formData.dependentes]
-        novosDependentes[currentPage - 5] = {
-          nome: '',
-          cpf: '',
-          dataNascimento: '',
-          municipioNascimento: '',
-          tipoDependente: '',
-          possuiOutroDependente: ''
+        if (!novosDependentes[currentPage - 5]) {
+          novosDependentes[currentPage - 5] = {
+            nome: '',
+            cpf: '',
+            dataNascimento: '',
+            municipioNascimento: '',
+            ufNascimento: '',
+            tipoDependente: '',
+            possuiOutroDependente: ''
+          }
+          setFormData(prev => ({ ...prev, dependentes: novosDependentes }))
         }
-        setFormData(prev => ({ ...prev, dependentes: novosDependentes }))
         setCurrentPage(currentPage + 1)
       } else {
-        setCurrentPage(8) // Página do cônjuge
+        setCurrentPage(8) // Vai para a página do cônjuge
       }
+    } else if (currentPage === 8) {
+      setCurrentPage(9) // Vai para a página do responsável pelo preenchimento
+    } else if (currentPage === 9) {
+      if (formData.responsavelPreenchimento === 'Empregado') {
+        setCurrentPage(10)
+      } else {
+        setCurrentPage(11)
+      }
+    } else if (currentPage === 10 || currentPage === 11) {
+      setCurrentPage(12)
+    } else if (currentPage === 12) {
+      setCurrentPage(13)
     } else {
       setCurrentPage(prev => prev + 1)
     }
@@ -293,18 +616,35 @@ function App() {
 
   const handleBack = () => {
     if (currentPage > 1) {
-      if (currentPage === 8) {
-        // Se estiver na página do cônjuge, volta para a última página de dependente ou página 5
-        if (formData.possuiDependentes) {
-          setCurrentPage(6 + formData.dependentes.length - 1)
-        } else {
+      if (currentPage === 13) {
+        setCurrentPage(12) // Volta para a página dos termos de uso
+      } else if (currentPage === 11 || currentPage === 10) {
+        setCurrentPage(9) // Sempre volta para a página 9 quando estiver nas páginas 10 ou 11
+      } else if (currentPage === 9) {
+        setCurrentPage(8)
+      } else if (currentPage === 8) {
+        // Se não possui dependentes, volta para a página 5 (pergunta sobre dependentes)
+        // Se possui dependentes, volta para a última página de dependente preenchida
+        if (formData.possuiDependentes === false) {
           setCurrentPage(5)
+        } else {
+          // Encontra o último dependente que foi preenchido
+          const ultimoDependenteIndex = formData.dependentes.findIndex(d => d.possuiOutroDependente === 'Não')
+          if (ultimoDependenteIndex === -1) {
+            // Se não encontrar nenhum dependente com "Não", usa o último da lista
+            setCurrentPage(6 + formData.dependentes.length - 1)
+          } else {
+            setCurrentPage(6 + ultimoDependenteIndex)
+          }
         }
-      } else if (currentPage >= 6) {
-        // Se estiver em uma página de dependente, volta para a página anterior
-        setCurrentPage(prev => prev - 1)
+      } else if (currentPage >= 6 && currentPage < 8) {
+        // Se estiver na primeira página de dependente, volta para a página 5
+        if (currentPage === 6) {
+          setCurrentPage(5)
+        } else {
+          setCurrentPage(currentPage - 1)
+        }
       } else {
-        // Para outras páginas, volta normalmente
         setCurrentPage(prev => prev - 1)
       }
     }
@@ -369,7 +709,27 @@ function App() {
           dependentes: [],
           nomeConjuge: '',
           cpfConjuge: '',
-          dataNascimentoConjuge: ''
+          dataNascimentoConjuge: '',
+          responsavelPreenchimento: '',
+          cargoFuncao: '',
+          salario: '',
+          dataAdmissao: '',
+          optanteValeTransporte: '',
+          valorPassagem: '',
+          nomeResponsavelPreenchimento: '',
+          periodoExperiencia: '',
+          jornadaTrabalho: '',
+          jornadaParcial: '',
+          adicionalPericulosidade: '',
+          adicionalInsalubridade: '',
+          quantidadePassagem: '',
+          valeCombustivel: '',
+          valorValeCombustivel: '',
+          tipoDescontoCombustivel: '',
+          valorDescontoCombustivel: '',
+          concordaTermos: false,
+          declaraInformacoes: false,
+          documentoIdentidade: null
         })
         setCurrentPage(1)
         Swal.fire({
@@ -392,10 +752,27 @@ function App() {
         cpf: '',
         dataNascimento: '',
         municipioNascimento: '',
+        ufNascimento: '',
         tipoDependente: '',
         possuiOutroDependente: ''
       }
     }
+
+    // Aplica máscara para o CPF do dependente
+    if (field === 'cpf') {
+      // Remove todos os caracteres não numéricos
+      const numbers = value.replace(/\D/g, '')
+      // Limita a 11 dígitos
+      const cpfNumbers = numbers.slice(0, 11)
+      // Aplica a máscara
+      value = cpfNumbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
+    }
+
+    // Aplica máscara para data de nascimento do dependente
+    if (field === 'dataNascimento') {
+      value = formatarData(value)
+    }
+
     novosDependentes[index] = {
       ...novosDependentes[index],
       [field]: value
@@ -550,54 +927,28 @@ function App() {
       <div className="form-group">
         <label htmlFor="dataNascimento">Data de Nascimento<span className="required-mark">*</span></label>
         <input
-          type="date"
+          type="text"
           id="dataNascimento"
           name="dataNascimento"
           className="form-input"
           value={formData.dataNascimento}
           onChange={handleInputChange}
           placeholder="DD/MM/AAAA"
+          maxLength={10}
         />
       </div>
 
       <div className="form-group">
         <label htmlFor="municipioNascimento">Município de Nascimento<span className="required-mark">*</span></label>
-        <select
+        <input
+          type="text"
           id="municipioNascimento"
           name="municipioNascimento"
           className="form-input"
           value={formData.municipioNascimento}
           onChange={handleInputChange}
-        >
-          <option value="">Selecione</option>
-          <option value="AC">Acre</option>
-          <option value="AL">Alagoas</option>
-          <option value="AP">Amapá</option>
-          <option value="AM">Amazonas</option>
-          <option value="BA">Bahia</option>
-          <option value="CE">Ceará</option>
-          <option value="DF">Distrito Federal</option>
-          <option value="ES">Espírito Santo</option>
-          <option value="GO">Goiás</option>
-          <option value="MA">Maranhão</option>
-          <option value="MT">Mato Grosso</option>
-          <option value="MS">Mato Grosso do Sul</option>
-          <option value="MG">Minas Gerais</option>
-          <option value="PA">Pará</option>
-          <option value="PB">Paraíba</option>
-          <option value="PR">Paraná</option>
-          <option value="PE">Pernambuco</option>
-          <option value="PI">Piauí</option>
-          <option value="RJ">Rio de Janeiro</option>
-          <option value="RN">Rio Grande do Norte</option>
-          <option value="RS">Rio Grande do Sul</option>
-          <option value="RO">Rondônia</option>
-          <option value="RR">Roraima</option>
-          <option value="SC">Santa Catarina</option>
-          <option value="SP">São Paulo</option>
-          <option value="SE">Sergipe</option>
-          <option value="TO">Tocantins</option>
-        </select>
+          placeholder="Digite o nome do município"
+        />
       </div>
 
       <div className="form-group">
@@ -1174,7 +1525,14 @@ function App() {
               type="radio"
               name="possuiDependentes"
               checked={formData.possuiDependentes === false}
-              onChange={() => setFormData(prev => ({ ...prev, possuiDependentes: false }))}
+              onChange={() => {
+                // Limpa os dados dos dependentes quando selecionar "Não"
+                setFormData(prev => ({
+                  ...prev,
+                  possuiDependentes: false,
+                  dependentes: [] // Limpa o array de dependentes
+                }))
+              }}
             />
             Não
           </label>
@@ -1233,24 +1591,46 @@ function App() {
       <div className="form-group">
         <label htmlFor={`dependenteDataNascimento${index}`}>Data de Nascimento do Dependente<span className="required-mark">*</span></label>
         <input
-          type="date"
+          type="text"
           id={`dependenteDataNascimento${index}`}
           className="form-input"
           value={formData.dependentes[index]?.dataNascimento || ''}
           onChange={(e) => handleDependenteChange(index, 'dataNascimento', e.target.value)}
+          placeholder="DD/MM/AAAA"
+          maxLength={10}
         />
       </div>
 
-      <div className="form-group">
-        <label htmlFor={`dependenteMunicipio${index}`}>Município/UF de Nascimento do Dependente<span className="required-mark">*</span></label>
-        <input
-          type="text"
-          id={`dependenteMunicipio${index}`}
-          className="form-input"
-          value={formData.dependentes[index]?.municipioNascimento || ''}
-          onChange={(e) => handleDependenteChange(index, 'municipioNascimento', e.target.value)}
-          placeholder="Digite o município e UF de nascimento"
-        />
+      <div className="form-row">
+        <div className="form-group">
+          <label htmlFor={`dependenteUF${index}`}>UF de Nascimento<span className="required-mark">*</span></label>
+          <select
+            id={`dependenteUF${index}`}
+            className="form-input"
+            value={formData.dependentes[index]?.ufNascimento || ''}
+            onChange={(e) => handleDependenteChange(index, 'ufNascimento', e.target.value)}
+          >
+            <option value="">Selecione</option>
+            {estados.map((estado) => (
+              <option key={estado.sigla} value={estado.sigla}>
+                {estado.sigla} - {estado.nome}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor={`dependenteMunicipio${index}`}>Município de Nascimento<span className="required-mark">*</span></label>
+          <input
+            type="text"
+            id={`dependenteMunicipio${index}`}
+            className="form-input"
+            value={formData.dependentes[index]?.municipioNascimento || ''}
+            onChange={(e) => handleDependenteChange(index, 'municipioNascimento', e.target.value)}
+            disabled={!formData.dependentes[index]?.ufNascimento}
+            placeholder={formData.dependentes[index]?.ufNascimento ? "Digite o município" : "Selecione a UF primeiro"}
+          />
+        </div>
       </div>
 
       <div className="form-group">
@@ -1298,6 +1678,9 @@ function App() {
               <span className="button-arrow">→</span>
             </button>
           </div>
+          <button type="button" className="clear-button" onClick={handleClear}>
+            Limpar
+          </button>
         </div>
       </div>
     </>
@@ -1368,6 +1751,691 @@ function App() {
     </>
   )
 
+  // Nova página para informações do empregado
+  const renderPage10 = () => (
+    <>
+      <p className="required-field">* Indica uma pergunta obrigatória</p>
+      
+      <div className="form-group">
+        <label htmlFor="cargoFuncao">Cargo/Função<span className="required-mark">*</span></label>
+        <input
+          type="text"
+          id="cargoFuncao"
+          name="cargoFuncao"
+          className="form-input"
+          value={formData.cargoFuncao}
+          onChange={handleInputChange}
+          placeholder="Digite o cargo ou função"
+        />
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="salario">Salário</label>
+        <input
+          type="text"
+          id="salario"
+          name="salario"
+          className="form-input"
+          value={formData.salario}
+          onChange={handleInputChange}
+          placeholder="R$ 0,00"
+        />
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="dataAdmissao">Data de admissão<span className="required-mark">*</span></label>
+        <input
+          type="text"
+          id="dataAdmissao"
+          name="dataAdmissao"
+          className="form-input"
+          value={formData.dataAdmissao}
+          onChange={handleInputChange}
+          placeholder="DD/MM/AAAA"
+          maxLength={10}
+        />
+      </div>
+
+      <div className="form-group">
+        <label className="checkbox-label">
+          Optante de vale transporte<span className="required-mark">*</span>
+        </label>
+        <div className="checkbox-group">
+          <label className="checkbox-option">
+            <input
+              type="radio"
+              name="optanteValeTransporte"
+              value="Sim"
+              checked={formData.optanteValeTransporte === 'Sim'}
+              onChange={(e) => setFormData(prev => ({ ...prev, optanteValeTransporte: e.target.value }))}
+            />
+            Sim
+          </label>
+          <label className="checkbox-option">
+            <input
+              type="radio"
+              name="optanteValeTransporte"
+              value="Não"
+              checked={formData.optanteValeTransporte === 'Não'}
+              onChange={(e) => setFormData(prev => ({ ...prev, optanteValeTransporte: e.target.value }))}
+            />
+            Não
+          </label>
+        </div>
+      </div>
+
+      {formData.optanteValeTransporte === 'Sim' && (
+        <div className="form-group">
+          <label htmlFor="valorPassagem">Valor da Passagem<span className="required-mark">*</span></label>
+          <input
+            type="text"
+            id="valorPassagem"
+            name="valorPassagem"
+            className="form-input"
+            value={formData.valorPassagem}
+            onChange={handleInputChange}
+            placeholder="R$ 0,00"
+          />
+        </div>
+      )}
+
+      <div className="button-container">
+        <div className="button-group">
+          <div className="button-group-left">
+            <button 
+              type="button" 
+              className="back-button" 
+              onClick={handleBack}
+            >
+              <span style={{ fontSize: '1.2rem' }}>←</span>
+              Voltar
+            </button>
+            <button type="button" className="next-button" onClick={handleNext}>
+              Próximo
+              <span className="button-arrow">→</span>
+            </button>
+          </div>
+          <button type="button" className="clear-button" onClick={handleClear}>
+            Limpar
+          </button>
+        </div>
+      </div>
+    </>
+  )
+
+  // Nova página para informações da empresa
+  const renderPage11 = () => (
+    <>
+      <p className="required-field">* Indica uma pergunta obrigatória</p>
+      
+      <div className="form-group">
+        <label htmlFor="nomeResponsavelPreenchimento">Nome do responsável pelo preenchimento<span className="required-mark">*</span></label>
+        <input
+          type="text"
+          id="nomeResponsavelPreenchimento"
+          name="nomeResponsavelPreenchimento"
+          className="form-input"
+          value={formData.nomeResponsavelPreenchimento}
+          onChange={handleInputChange}
+          placeholder="Nome de quem está preenchendo"
+        />
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="cargoFuncao">Cargo/Função<span className="required-mark">*</span></label>
+        <input
+          type="text"
+          id="cargoFuncao"
+          name="cargoFuncao"
+          className="form-input"
+          value={formData.cargoFuncao}
+          onChange={handleInputChange}
+          placeholder="Digite o cargo ou função"
+        />
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="salario">Salário<span className="required-mark">*</span></label>
+        <input
+          type="text"
+          id="salario"
+          name="salario"
+          className="form-input"
+          value={formData.salario}
+          onChange={handleInputChange}
+          placeholder="R$ 0,00"
+        />
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="dataAdmissao">Data de admissão<span className="required-mark">*</span></label>
+        <input
+          type="text"
+          id="dataAdmissao"
+          name="dataAdmissao"
+          className="form-input"
+          value={formData.dataAdmissao}
+          onChange={handleInputChange}
+          placeholder="DD/MM/AAAA"
+          maxLength={10}
+        />
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="periodoExperiencia">Período de Experiência<span className="required-mark">*</span></label>
+        <select
+          id="periodoExperiencia"
+          name="periodoExperiencia"
+          className="form-input"
+          value={formData.periodoExperiencia}
+          onChange={handleInputChange}
+        >
+          <option value="">Selecione</option>
+          <option value="30+0">30 + 0</option>
+          <option value="45+0">45 + 0</option>
+          <option value="30+30">30 + 30</option>
+          <option value="45+45">45 + 45</option>
+          <option value="30+60">30 + 60</option>
+          <option value="60+30">60 + 30</option>
+        </select>
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="jornadaTrabalho">Jornada de Trabalho<span className="required-mark">*</span></label>
+        <select
+          id="jornadaTrabalho"
+          name="jornadaTrabalho"
+          className="form-input"
+          value={formData.jornadaTrabalho}
+          onChange={handleInputChange}
+        >
+          <option value="">Selecione</option>
+          <option value="220_44">220 horas mensais e 44 horas semanais</option>
+          <option value="200_40">200 horas mensais e 40 horas semanais</option>
+          <option value="180_36">180 horas mensais e 36 horas semanais</option>
+        </select>
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="jornadaParcial">Jornada Parcial<span className="required-mark">*</span></label>
+        <select
+          id="jornadaParcial"
+          name="jornadaParcial"
+          className="form-input"
+          value={formData.jornadaParcial}
+          onChange={handleInputChange}
+        >
+          <option value="">Selecione</option>
+          <option value="150_30">150 horas mensais e 30 horas semanais</option>
+          <option value="130_26">130 horas mensais e 26 horas semanais</option>
+          <option value="100_20">100 horas mensais e 20 horas semanais</option>
+        </select>
+      </div>
+
+      <div className="form-group">
+        <label className="checkbox-label">
+          Adicional de Periculosidade<span className="required-mark">*</span>
+        </label>
+        <div className="checkbox-group">
+          <label className="checkbox-option">
+            <input
+              type="radio"
+              name="adicionalPericulosidade"
+              value="Sim"
+              checked={formData.adicionalPericulosidade === 'Sim'}
+              onChange={(e) => setFormData(prev => ({ ...prev, adicionalPericulosidade: e.target.value }))}
+            />
+            Sim
+          </label>
+          <label className="checkbox-option">
+            <input
+              type="radio"
+              name="adicionalPericulosidade"
+              value="Não"
+              checked={formData.adicionalPericulosidade === 'Não'}
+              onChange={(e) => setFormData(prev => ({ ...prev, adicionalPericulosidade: e.target.value }))}
+            />
+            Não
+          </label>
+        </div>
+      </div>
+
+      <div className="form-group">
+        <label className="checkbox-label">
+          Adicional de Insalubridade<span className="required-mark">*</span>
+        </label>
+        <div className="checkbox-group">
+          <label className="checkbox-option">
+            <input
+              type="radio"
+              name="adicionalInsalubridade"
+              value="Sim"
+              checked={formData.adicionalInsalubridade === 'Sim'}
+              onChange={(e) => setFormData(prev => ({ ...prev, adicionalInsalubridade: e.target.value }))}
+            />
+            Sim
+          </label>
+          <label className="checkbox-option">
+            <input
+              type="radio"
+              name="adicionalInsalubridade"
+              value="Não"
+              checked={formData.adicionalInsalubridade === 'Não'}
+              onChange={(e) => setFormData(prev => ({ ...prev, adicionalInsalubridade: e.target.value }))}
+            />
+            Não
+          </label>
+        </div>
+      </div>
+
+      <div className="form-group">
+        <label className="checkbox-label">
+          Optante de vale transporte<span className="required-mark">*</span>
+        </label>
+        <div className="checkbox-group">
+          <label className="checkbox-option">
+            <input
+              type="radio"
+              name="optanteValeTransporte"
+              value="Sim"
+              checked={formData.optanteValeTransporte === 'Sim'}
+              onChange={(e) => setFormData(prev => ({ ...prev, optanteValeTransporte: e.target.value }))}
+            />
+            Sim
+          </label>
+          <label className="checkbox-option">
+            <input
+              type="radio"
+              name="optanteValeTransporte"
+              value="Não"
+              checked={formData.optanteValeTransporte === 'Não'}
+              onChange={(e) => setFormData(prev => ({ ...prev, optanteValeTransporte: e.target.value }))}
+            />
+            Não
+          </label>
+        </div>
+      </div>
+
+      {formData.optanteValeTransporte === 'Sim' && (
+        <>
+          <div className="form-group">
+            <label htmlFor="valorPassagem">Valor da Passagem<span className="required-mark">*</span></label>
+            <input
+              type="text"
+              id="valorPassagem"
+              name="valorPassagem"
+              className="form-input"
+              value={formData.valorPassagem}
+              onChange={handleInputChange}
+              placeholder="R$ 0,00"
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="quantidadePassagem">Quantidade de passagem por dia<span className="required-mark">*</span></label>
+            <input
+              type="text"
+              id="quantidadePassagem"
+              name="quantidadePassagem"
+              className="form-input"
+              value={formData.quantidadePassagem}
+              onChange={handleInputChange}
+              placeholder="Digite a quantidade"
+            />
+          </div>
+        </>
+      )}
+
+      <div className="form-group">
+        <label className="checkbox-label">
+          Vale Combustível<span className="required-mark">*</span>
+        </label>
+        <div className="checkbox-group">
+          <label className="checkbox-option">
+            <input
+              type="radio"
+              name="valeCombustivel"
+              value="Sim"
+              checked={formData.valeCombustivel === 'Sim'}
+              onChange={(e) => setFormData(prev => ({ ...prev, valeCombustivel: e.target.value }))}
+            />
+            Sim
+          </label>
+          <label className="checkbox-option">
+            <input
+              type="radio"
+              name="valeCombustivel"
+              value="Não"
+              checked={formData.valeCombustivel === 'Não'}
+              onChange={(e) => setFormData(prev => ({ ...prev, valeCombustivel: e.target.value }))}
+            />
+            Não
+          </label>
+        </div>
+      </div>
+
+      {formData.valeCombustivel === 'Sim' && (
+        <>
+          <div className="form-group">
+            <label htmlFor="valorValeCombustivel">Valor do vale Combustível<span className="required-mark">*</span></label>
+            <input
+              type="text"
+              id="valorValeCombustivel"
+              name="valorValeCombustivel"
+              className="form-input"
+              value={formData.valorValeCombustivel}
+              onChange={handleInputChange}
+              placeholder="R$ 0,00"
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="tipoDescontoCombustivel">Tipo de desconto do Vale Combustível<span className="required-mark">*</span></label>
+            <select
+              id="tipoDescontoCombustivel"
+              name="tipoDescontoCombustivel"
+              className="form-input"
+              value={formData.tipoDescontoCombustivel}
+              onChange={handleInputChange}
+            >
+              <option value="">Selecione</option>
+              <option value="valor">Valor em Reais</option>
+              <option value="percentual">Percentual</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="valorDescontoCombustivel">Valor do desconto do Vale Combustível<span className="required-mark">*</span></label>
+            <input
+              type="text"
+              id="valorDescontoCombustivel"
+              name="valorDescontoCombustivel"
+              className="form-input"
+              value={formData.valorDescontoCombustivel}
+              onChange={handleInputChange}
+              placeholder={formData.tipoDescontoCombustivel === 'valor' ? 'R$ 0,00' : '0%'}
+            />
+          </div>
+        </>
+      )}
+
+      <div className="button-container">
+        <div className="button-group">
+          <div className="button-group-left">
+            <button 
+              type="button" 
+              className="back-button" 
+              onClick={handleBack}
+            >
+              <span style={{ fontSize: '1.2rem' }}>←</span>
+              Voltar
+            </button>
+            <button type="button" className="next-button" onClick={handleNext}>
+              Próximo
+              <span className="button-arrow">→</span>
+            </button>
+          </div>
+          <button type="button" className="clear-button" onClick={handleClear}>
+            Limpar
+          </button>
+        </div>
+      </div>
+    </>
+  )
+
+  // Página 9 - Responsável pelo preenchimento
+  const renderPage9 = () => (
+    <>
+      <p className="required-field">* Indica uma pergunta obrigatória</p>
+      
+      <div className="form-group">
+        <label className="checkbox-label">
+          Responsável pelo preenchimento do formulário:<span className="required-mark">*</span>
+        </label>
+        <div className="checkbox-group">
+          <label className="checkbox-option">
+            <input
+              type="radio"
+              name="responsavelPreenchimento"
+              value="Empregado"
+              checked={formData.responsavelPreenchimento === 'Empregado'}
+              onChange={(e) => {
+                // Se mudar de Empresa para Empregado, limpa os dados específicos da empresa
+                if (formData.responsavelPreenchimento === 'Empresa') {
+                  setFormData(prev => ({
+                    ...prev,
+                    responsavelPreenchimento: e.target.value,
+                    nomeResponsavelPreenchimento: '',
+                    periodoExperiencia: '',
+                    jornadaTrabalho: '',
+                    jornadaParcial: '',
+                    adicionalPericulosidade: '',
+                    adicionalInsalubridade: '',
+                    quantidadePassagem: '',
+                    valeCombustivel: '',
+                    valorValeCombustivel: '',
+                    tipoDescontoCombustivel: '',
+                    valorDescontoCombustivel: ''
+                  }))
+                } else {
+                  setFormData(prev => ({ ...prev, responsavelPreenchimento: e.target.value }))
+                }
+              }}
+            />
+            Empregado
+          </label>
+          <label className="checkbox-option">
+            <input
+              type="radio"
+              name="responsavelPreenchimento"
+              value="Empresa"
+              checked={formData.responsavelPreenchimento === 'Empresa'}
+              onChange={(e) => {
+                // Se mudar de Empregado para Empresa, limpa os dados específicos do empregado
+                if (formData.responsavelPreenchimento === 'Empregado') {
+                  setFormData(prev => ({
+                    ...prev,
+                    responsavelPreenchimento: e.target.value,
+                    cargoFuncao: '',
+                    salario: '',
+                    dataAdmissao: '',
+                    optanteValeTransporte: '',
+                    valorPassagem: ''
+                  }))
+                } else {
+                  setFormData(prev => ({ ...prev, responsavelPreenchimento: e.target.value }))
+                }
+              }}
+            />
+            Empresa
+          </label>
+        </div>
+      </div>
+
+      <div className="button-container">
+        <div className="button-group">
+          <div className="button-group-left">
+            <button 
+              type="button" 
+              className="back-button" 
+              onClick={handleBack}
+            >
+              <span style={{ fontSize: '1.2rem' }}>←</span>
+              Voltar
+            </button>
+            <button type="button" className="next-button" onClick={handleNext}>
+              Próximo
+              <span className="button-arrow">→</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  )
+
+  // Página 12 - Termos de Uso
+  const renderPage12 = () => (
+    <>
+      <div className="terms-container">
+        <div className="terms-content">
+          <h2>Termos de Uso dos Dados</h2>
+          <div className="terms-text">
+            <h3>1 - DA AUTORIZAÇÃO</h3>
+            <p>Por este instrumento, o qual visa registrar a manifestação livre e inequívoca pela qual o Titular concorda com o tratamento de seus dados pessoais e dos seus dependentes para finalidade específica, em conformidade com a Lei nº 13.709/2018.</p>
+            
+            <p>Assino o presente termo e concordo que G2C CONTABILIDADE LTDA, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº 15.120.183/0001-56, doravante denominada Controladora, tome decisões referentes ao tratamento de seus dados pessoais, e, ainda, os dados necessários ao usufruto de serviços e benefícios ofertados por ela, bem como realize o tratamento de tais dados, envolvendo operações como as que se referem a coleta, produção, recepção, classificação, utilização, acesso, reprodução, transmissão, distribuição, processamento, arquivamento, armazenamento, eliminação, avaliação ou controle da informação, modificação, comunicação, transferência, difusão ou extração.</p>
+
+            <h3>2 - Dos Dados Pessoais</h3>
+            <p>A Controladora fica autorizada a tomar decisões referentes ao tratamento e a realizar o tratamento dos seguintes dados pessoais do Titular:</p>
+            <ul>
+              <li>Nome completo</li>
+              <li>Data de nascimento</li>
+              <li>Número e imagem da Carteira de Identidade (RG)</li>
+              <li>Número e imagem do Cadastro de Pessoas Físicas (CPF)</li>
+              <li>Número e imagem da Carteira Nacional de Habilitação (CNH)</li>
+              <li>Número do Cadastro Nacional de Pessoas Jurídicas (CNPJ)</li>
+              <li>Fotografia 3x4</li>
+              <li>Estado civil</li>
+              <li>Nível de instrução ou escolaridade</li>
+              <li>Endereço completo</li>
+              <li>Números de telefone, WhatsApp e endereços de e-mail</li>
+              <li>Banco, agência e número de contas bancárias</li>
+              <li>Nome de usuário e senha específicos para uso dos serviços do Controlador</li>
+              <li>Comunicação, verbal e escrita, mantida entre o Titular e o Controlador</li>
+            </ul>
+
+            <h3>3 - Finalidades do Tratamento dos Dados</h3>
+            <p>O tratamento dos dados pessoais listados nestes termos tem as seguintes finalidades:</p>
+            <ul>
+              <li>Possibilitar que a Controladora identifique e entre em contato com o Titular para fins de relacionamento trabalhista</li>
+              <li>Possibilitar que a Controladora elabore contrato de trabalho</li>
+              <li>Possibilitar que a Controladora envie ao Titular a remuneração pactuada</li>
+              <li>Possibilitar que a Controladora utilize tais dados em Pesquisas de Mercado</li>
+              <li>Possibilitar que a Controladora utilize tais dados na inscrição, divulgação, premiação dos colaboradores</li>
+              <li>Possibilitar que a Controladora utilize tais dados na elaboração de relatórios</li>
+              <li>Possibilitar que a Controladora utilize tais dados para suas peças de Comunicação</li>
+              <li>Possibilitar que a Controladora utilize tais dados para fins fiscais, sociais, previdenciários e trabalhistas</li>
+              <li>Possibilitar que a Controladora utilize tais dados para manter banco de dados de profissionais do mercado para facilitar o contato em futuros convites para eventos</li>
+            </ul>
+
+            <h3>4 - Compartilhamento de Dados com outros Setores da Controladora</h3>
+            <p>A Controladora fica autorizada a compartilhar os dados pessoais do Titular com outros agentes de tratamento de dados, caso seja necessário para as finalidades listadas neste termo, observados os princípios e as garantias estabelecidas pela Lei nº 13.709/2018.</p>
+
+            <h3>5 - Compartilhamento de Dados com Terceiros</h3>
+            <p>A controladora fica autorizada a compartilhar os dados pessoais do Titular com empresas terceirizadas que prestam serviços a ela e que são relacionados ao cumprimento da atividade-fim desta autorização.</p>
+            <p>Dados pessoais de acessos não autorizados e de situações acidentais ou ilícitas de destruição, perda, alteração, comunicação ou qualquer forma de tratamento inadequado ou ilícito.</p>
+
+            <h3>6 - Término do Tratamento dos Dados</h3>
+            <p>A Controladora poderá manter e tratar os dados pessoais do Titular durante todo o período em que os mesmos forem pertinentes ao alcance das finalidades listadas neste termo. Dados pessoais anonimizados, sem possibilidade de associação ao indivíduo, poderão ser mantidos por período indefinido.</p>
+            <p>O Titular poderá solicitar via e-mail ou correspondência ao Controlador, a qualquer momento, que sejam eliminados os dados pessoais não anonimizados.</p>
+            <p>O Titular fica ciente de que poderá ser inviável ao Controlador continuar a relação de emprego a partir da eliminação dos dados pessoais.</p>
+
+            <h3>7 - Direito de Revogação do Consentimento</h3>
+            <p>Este consentimento poderá ser revogado pelo Titular, a qualquer momento, mediante solicitação via e-mail ou correspondência, observadas as obrigações legais ou regulatórias a serem cumpridas pela Controladora, na forma do art. 7, inc II, Lei 13.709/2018.</p>
+          </div>
+
+          <div className="form-group">
+            <label className="checkbox-label">
+              <input
+                type="radio"
+                name="concordaTermos"
+                checked={formData.concordaTermos}
+                onChange={() => setFormData(prev => ({ ...prev, concordaTermos: true }))}
+              />
+              Li e concordo com os termos de uso
+            </label>
+          </div>
+
+          <div className="form-group" style={{ marginTop: '2rem' }}>
+            <label className="checkbox-label">Quanto as informações prestadas</label>
+            <div className="checkbox-group" style={{ marginTop: '0.5rem' }}>
+              <label className="checkbox-option">
+                <input
+                  type="radio"
+                  name="declaraInformacoes"
+                  checked={formData.declaraInformacoes}
+                  onChange={() => setFormData(prev => ({ ...prev, declaraInformacoes: true }))}
+                />
+                Declaro que as informações acima prestadas são verdadeiras, e assumo a inteira responsabilidade pelas mesmas.
+              </label>
+            </div>
+          </div>
+
+          <div className="form-group" style={{ marginTop: '2rem' }}>
+            <label htmlFor="documentoIdentidade">Adicione Foto legível do documento de Identidade, frente e verso.</label>
+            <input
+              type="file"
+              id="documentoIdentidade"
+              name="documentoIdentidade"
+              className="form-input"
+              accept="image/*"
+              onChange={handleInputChange}
+            />
+            <small className="file-info">Faça upload de 1 arquivo aceito. O tamanho máximo é de 10 MB.</small>
+          </div>
+        </div>
+      </div>
+
+      <div className="button-container">
+        <div className="button-group">
+          <div className="button-group-left">
+            <button 
+              type="button" 
+              className="back-button" 
+              onClick={handleBack}
+            >
+              <span style={{ fontSize: '1.2rem' }}>←</span>
+              Voltar
+            </button>
+            <button type="button" className="next-button" onClick={handleNext}>
+              Próximo
+              <span className="button-arrow">→</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  )
+
+  // Página 13 - Confirmação de Envio
+  const renderPage13 = () => (
+    <>
+      <div className="form-group" style={{ textAlign: 'center', marginBottom: '2rem' }}>
+        <h2 style={{ color: '#333', fontSize: '1.5rem', marginBottom: '1rem' }}>
+          Deseja enviar as respostas do formulário?
+        </h2>
+      </div>
+
+      <div className="button-container">
+        <div className="button-group">
+          <button 
+            type="button" 
+            className="back-button" 
+            onClick={handleBack}
+          >
+            <span style={{ fontSize: '1.2rem' }}>←</span>
+            Não, Revisar Respostas
+          </button>
+          <button 
+            type="button" 
+            className="next-button" 
+            onClick={() => {
+              // Aqui você pode adicionar a lógica para enviar o formulário
+              Swal.fire({
+                title: 'Formulário Enviado!',
+                text: 'Suas respostas foram enviadas com sucesso.',
+                icon: 'success',
+                confirmButtonColor: '#646cff'
+              })
+            }}
+          >
+            Enviar Respostas
+          </button>
+        </div>
+      </div>
+    </>
+  )
+
   return (
     <div className="app-container">
       <div className="logo-container">
@@ -1383,6 +2451,11 @@ function App() {
           {currentPage === 5 && renderPage5()}
           {currentPage >= 6 && currentPage < 8 && renderDependentePage(currentPage - 6)}
           {currentPage === 8 && renderPage8()}
+          {currentPage === 9 && renderPage9()}
+          {currentPage === 10 && renderPage10()}
+          {currentPage === 11 && renderPage11()}
+          {currentPage === 12 && renderPage12()}
+          {currentPage === 13 && renderPage13()}
         </form>
       </div>
       <footer className="footer">
