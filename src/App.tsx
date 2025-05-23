@@ -117,14 +117,6 @@ const estados = [
   { sigla: 'TO', nome: 'Tocantins' }
 ];
 
-// Exemplo de municípios por estado (você pode expandir esta lista)
-const municipiosPorEstado: { [key: string]: string[] } = {
-  'SP': ['São Paulo', 'Campinas', 'Santos', 'São Bernardo do Campo', 'São José dos Campos'],
-  'RJ': ['Rio de Janeiro', 'Niterói', 'Nova Iguaçu', 'São Gonçalo', 'Duque de Caxias'],
-  'MG': ['Belo Horizonte', 'Uberlândia', 'Contagem', 'Juiz de Fora', 'Betim'],
-  // Adicione mais estados e seus municípios conforme necessário
-};
-
 function App() {
   const [currentPage, setCurrentPage] = useState(1)
   const [formData, setFormData] = useState<FormData>({
@@ -432,10 +424,6 @@ function App() {
       return false
     }
     return true
-  }
-
-  const validatePage8 = () => {
-    return true; // Sempre retorna true, permitindo avançar independente do preenchimento
   }
 
   const validatePage9 = () => {
