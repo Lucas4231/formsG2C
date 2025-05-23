@@ -119,6 +119,7 @@ const estados = [
 
 function App() {
   const [currentPage, setCurrentPage] = useState(1)
+  const [currentDependenteIndex, setCurrentDependenteIndex] = useState(0)
   const [formData, setFormData] = useState<FormData>({
     nomeEmpresa: '',
     nomeResponsavel: '',
@@ -228,7 +229,7 @@ function App() {
     const { name, value, files } = e.target as HTMLInputElement
 
     // Aplicar máscaras para telefone, celular e CPF
-    if (name === 'telefone' || name === 'celular' || name === 'cpf') {
+    if (name === 'telefone' || name === 'celular' || name === 'cpf' || name === 'cpfConjuge') {
       // Remove todos os caracteres não numéricos
       const numbers = value.replace(/\D/g, '')
       
@@ -242,7 +243,7 @@ function App() {
         }
       } else if (name === 'celular') {
         maskedValue = numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')
-      } else if (name === 'cpf') {
+      } else if (name === 'cpf' || name === 'cpfConjuge') {
         // Limita a 11 dígitos
         const cpfNumbers = numbers.slice(0, 11)
         maskedValue = cpfNumbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
@@ -552,71 +553,54 @@ function App() {
   }
 
   const handleNext = () => {
-    // Validações específicas para cada página
-    if (currentPage === 1 && !validatePage1()) return
-    if (currentPage === 2 && !validatePage2()) return
-    if (currentPage === 3 && !validatePage3()) return
-    if (currentPage === 4 && !validatePage4()) return
-    if (currentPage === 5 && !validatePage5()) return
-    if (currentPage >= 6 && currentPage < 8 && !validateDependentePage(currentPage - 6)) return
-    if (currentPage === 9 && !validatePage9()) return
-    if (currentPage === 10 && !validatePage10()) return
-    if (currentPage === 11 && !validatePage11()) return
-    if (currentPage === 12 && !validatePage12()) return
+    let canProceed = true
 
-    // Lógica para determinar a próxima página
-    if (currentPage === 5) {
-      if (formData.possuiDependentes === true) {
-        if (formData.dependentes.length === 0) {
-          const novosDependentes = [{
-            nome: '',
-            cpf: '',
-            dataNascimento: '',
-            municipioNascimento: '',
-            ufNascimento: '',
-            tipoDependente: '',
-            possuiOutroDependente: ''
-          }]
-          setFormData(prev => ({ ...prev, dependentes: novosDependentes }))
+    switch (currentPage) {
+      case 1:
+        canProceed = validatePage1()
+        break
+      case 2:
+        canProceed = validatePage2()
+        break
+      case 3:
+        canProceed = validatePage3()
+        break
+      case 4:
+        canProceed = validatePage4()
+        break
+      case 5:
+        canProceed = validatePage5()
+        break
+      case 6:
+        canProceed = validateDependentePage(currentDependenteIndex)
+        break
+      case 7:
+        canProceed = validatePage9()
+        break
+      case 8:
+        canProceed = validatePage8()
+        break
+      case 9:
+        canProceed = validatePage10()
+        break
+      case 10:
+        canProceed = validatePage11()
+        break
+      case 11:
+        canProceed = validatePage12()
+        break
+    }
+
+    if (canProceed) {
+      if (currentPage === 5 && formData.possuiDependentes) {
+        if (currentDependenteIndex < formData.dependentes.length - 1) {
+          setCurrentDependenteIndex(prev => prev + 1)
+        } else {
+          setCurrentPage(prev => prev + 1)
         }
-        setCurrentPage(6)
-      } else if (formData.possuiDependentes === false) {
-        setCurrentPage(8) // Vai direto para a página do cônjuge
-      }
-    } else if (currentPage >= 6 && currentPage < 8) {
-      const dependenteAtual = formData.dependentes[currentPage - 6]
-      if (dependenteAtual?.possuiOutroDependente === 'Sim') {
-        const novosDependentes = [...formData.dependentes]
-        if (!novosDependentes[currentPage - 5]) {
-          novosDependentes[currentPage - 5] = {
-            nome: '',
-            cpf: '',
-            dataNascimento: '',
-            municipioNascimento: '',
-            ufNascimento: '',
-            tipoDependente: '',
-            possuiOutroDependente: ''
-          }
-          setFormData(prev => ({ ...prev, dependentes: novosDependentes }))
-        }
-        setCurrentPage(currentPage + 1)
       } else {
-        setCurrentPage(8) // Vai para a página do cônjuge
+        setCurrentPage(prev => prev + 1)
       }
-    } else if (currentPage === 8) {
-      setCurrentPage(9) // Vai para a página do responsável pelo preenchimento
-    } else if (currentPage === 9) {
-      if (formData.responsavelPreenchimento === 'Empregado') {
-        setCurrentPage(10)
-      } else {
-        setCurrentPage(11)
-      }
-    } else if (currentPage === 10 || currentPage === 11) {
-      setCurrentPage(12)
-    } else if (currentPage === 12) {
-      setCurrentPage(13)
-    } else {
-      setCurrentPage(prev => prev + 1)
     }
   }
 
@@ -1709,10 +1693,38 @@ function App() {
   )
 
   // Página 8 - Dados do Cônjuge
+  const validatePage8 = () => {
+    const requiredFields = {
+      nomeConjuge: 'Nome do Cônjuge',
+      cpfConjuge: 'CPF do Cônjuge',
+      dataNascimentoConjuge: 'Data de Nascimento do Cônjuge'
+    }
+
+    const emptyFields = Object.entries(requiredFields)
+      .filter(([key]) => !formData[key])
+      .map(([_, label]) => label)
+
+    if (emptyFields.length > 0) {
+      Swal.fire({
+        title: 'Campos Obrigatórios',
+        html: `Por favor, preencha os seguintes campos:<br><br>${emptyFields.join('<br>')}`,
+        icon: 'warning',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#646cff'
+      })
+      return false
+    }
+
+    return true
+  }
+
+  // Página 8 - Dados do Cônjuge
   const renderPage8 = () => (
     <>
+      <p className="required-field">* Indica uma pergunta obrigatória</p>
+      
       <div className="form-group">
-        <label htmlFor="nomeConjuge">Nome Completo do Cônjuge</label>
+        <label htmlFor="nomeConjuge">Nome Completo do Cônjuge<span className="required-mark">*</span></label>
         <input
           type="text"
           id="nomeConjuge"
@@ -1725,7 +1737,7 @@ function App() {
       </div>
 
       <div className="form-group">
-        <label htmlFor="cpfConjuge">CPF do Cônjuge</label>
+        <label htmlFor="cpfConjuge">CPF do Cônjuge<span className="required-mark">*</span></label>
         <input
           type="text"
           id="cpfConjuge"
@@ -1738,7 +1750,7 @@ function App() {
       </div>
 
       <div className="form-group">
-        <label htmlFor="dataNascimentoConjuge">Data de Nascimento do Cônjuge</label>
+        <label htmlFor="dataNascimentoConjuge">Data de Nascimento do Cônjuge<span className="required-mark">*</span></label>
         <input
           type="text"
           id="dataNascimentoConjuge"
