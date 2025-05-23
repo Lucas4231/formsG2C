@@ -2512,14 +2512,21 @@ function App() {
           icon: 'success',
           confirmButtonColor: '#646cff'
         })
-      } catch (error) {
-        console.error('Erro detalhado ao enviar email:', error)
+      } catch (error: unknown) {
+        let errorMessage = 'Erro desconhecido ao enviar formulário';
+        
+        if (error instanceof Error) {
+          errorMessage = error.message;
+        }
+        
+        console.error('Erro ao enviar formulário:', errorMessage);
+        
         Swal.fire({
           title: 'Erro ao Enviar',
-          text: `Ocorreu um erro ao enviar o formulário: ${error.message || 'Erro desconhecido'}. Por favor, tente novamente.`,
+          text: `Ocorreu um erro ao enviar o formulário: ${errorMessage}. Por favor, tente novamente.`,
           icon: 'error',
           confirmButtonColor: '#646cff'
-        })
+        });
       }
     }
 
