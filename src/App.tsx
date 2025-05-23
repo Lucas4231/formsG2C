@@ -3,6 +3,7 @@ import type { ChangeEvent } from 'react'
 import './App.css'
 import logo from './assets/G2C_logo_azul.png'
 import Swal from 'sweetalert2'
+import emailjs from '@emailjs/browser'
 
 interface Dependente {
   nome: string;
@@ -263,11 +264,28 @@ function App() {
     }
 
     // Aplicar máscara para campos de data
-    if (name.includes('data')) {
-      const formattedDate = formatarData(value)
+    if (name.includes('data') || name === 'dataExpedicao' || name === 'dataExpedicaoCT' || 
+        name === 'dataExpedicaoCNH' || name === 'dataValidadeCNH' || name === 'dataPrimeiraHabilitacao' || 
+        name === 'dataExpedicaoReservista' || name === 'dataNascimentoConjuge' || name === 'dataAdmissao') {
+      // Remove todos os caracteres não numéricos
+      const numbers = value.replace(/\D/g, '')
+      
+      // Limita a 8 dígitos (DDMMAAAA)
+      const limitedNumbers = numbers.slice(0, 8)
+      
+      // Aplica a máscara
+      let maskedValue = ''
+      if (limitedNumbers.length <= 2) {
+        maskedValue = limitedNumbers
+      } else if (limitedNumbers.length <= 4) {
+        maskedValue = `${limitedNumbers.slice(0, 2)}/${limitedNumbers.slice(2)}`
+      } else {
+        maskedValue = `${limitedNumbers.slice(0, 2)}/${limitedNumbers.slice(2, 4)}/${limitedNumbers.slice(4)}`
+      }
+
       setFormData(prev => ({
         ...prev,
-        [name]: formattedDate
+        [name]: maskedValue
       }))
       return
     }
@@ -618,6 +636,13 @@ function App() {
     if (currentPage > 1) {
       if (currentPage === 13) {
         setCurrentPage(12) // Volta para a página dos termos de uso
+      } else if (currentPage === 12) {
+        // Volta para a página correta baseado na escolha do responsável pelo preenchimento
+        if (formData.responsavelPreenchimento === 'Empregado') {
+          setCurrentPage(10)
+        } else {
+          setCurrentPage(11)
+        }
       } else if (currentPage === 11 || currentPage === 10) {
         setCurrentPage(9) // Sempre volta para a página 9 quando estiver nas páginas 10 ou 11
       } else if (currentPage === 9) {
@@ -1093,13 +1118,14 @@ function App() {
         <div className="form-group">
           <label htmlFor="dataExpedicao">Data de Expedição</label>
           <input
-            type="date"
+            type="text"
             id="dataExpedicao"
             name="dataExpedicao"
             className="form-input"
             value={formData.dataExpedicao}
             onChange={handleInputChange}
             placeholder="DD/MM/AAAA"
+            maxLength={10}
           />
         </div>
       </div>
@@ -1120,13 +1146,14 @@ function App() {
         <div className="form-group">
           <label htmlFor="dataExpedicaoCT">Data de Expedição</label>
           <input
-            type="date"
+            type="text"
             id="dataExpedicaoCT"
             name="dataExpedicaoCT"
             className="form-input"
             value={formData.dataExpedicaoCT}
             onChange={handleInputChange}
             placeholder="DD/MM/AAAA"
+            maxLength={10}
           />
         </div>
       </div>
@@ -1171,34 +1198,40 @@ function App() {
         <div className="form-group">
           <label htmlFor="dataExpedicaoCNH">Data de Expedição</label>
           <input
-            type="date"
+            type="text"
             id="dataExpedicaoCNH"
             name="dataExpedicaoCNH"
             className="form-input"
             value={formData.dataExpedicaoCNH}
             onChange={handleInputChange}
+            placeholder="DD/MM/AAAA"
+            maxLength={10}
           />
         </div>
         <div className="form-group">
           <label htmlFor="dataValidadeCNH">Data de Validade</label>
           <input
-            type="date"
+            type="text"
             id="dataValidadeCNH"
             name="dataValidadeCNH"
             className="form-input"
             value={formData.dataValidadeCNH}
             onChange={handleInputChange}
+            placeholder="DD/MM/AAAA"
+            maxLength={10}
           />
         </div>
         <div className="form-group">
           <label htmlFor="dataPrimeiraHabilitacao">Data da 1ª Habilitação</label>
           <input
-            type="date"
+            type="text"
             id="dataPrimeiraHabilitacao"
             name="dataPrimeiraHabilitacao"
             className="form-input"
             value={formData.dataPrimeiraHabilitacao}
             onChange={handleInputChange}
+            placeholder="DD/MM/AAAA"
+            maxLength={10}
           />
         </div>
       </div>
@@ -1232,13 +1265,14 @@ function App() {
         <div className="form-group">
           <label htmlFor="dataExpedicaoReservista">Data de Expedição</label>
           <input
-            type="date"
+            type="text"
             id="dataExpedicaoReservista"
             name="dataExpedicaoReservista"
             className="form-input"
             value={formData.dataExpedicaoReservista}
             onChange={handleInputChange}
             placeholder="DD/MM/AAAA"
+            maxLength={10}
           />
         </div>
       </div>
@@ -1718,12 +1752,14 @@ function App() {
       <div className="form-group">
         <label htmlFor="dataNascimentoConjuge">Data de Nascimento do Cônjuge</label>
         <input
-          type="date"
+          type="text"
           id="dataNascimentoConjuge"
           name="dataNascimentoConjuge"
           className="form-input"
           value={formData.dataNascimentoConjuge}
           onChange={handleInputChange}
+          placeholder="DD/MM/AAAA"
+          maxLength={10}
         />
       </div>
 
@@ -2398,43 +2434,140 @@ function App() {
   )
 
   // Página 13 - Confirmação de Envio
-  const renderPage13 = () => (
-    <>
-      <div className="form-group" style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <h2 style={{ color: '#333', fontSize: '1.5rem', marginBottom: '1rem' }}>
-          Deseja enviar as respostas do formulário?
-        </h2>
-      </div>
+  const renderPage13 = () => {
+    const handleSubmit = async () => {
+      try {
+        // Preparar os anexos
+        const attachments = [];
+        if (formData.foto) {
+          attachments.push({
+            filename: formData.foto.name,
+            content: await readFileAsBase64(formData.foto)
+          });
+        }
+        if (formData.documentoIdentidade) {
+          attachments.push({
+            filename: formData.documentoIdentidade.name,
+            content: await readFileAsBase64(formData.documentoIdentidade)
+          });
+        }
 
-      <div className="button-container">
-        <div className="button-group">
-          <button 
-            type="button" 
-            className="back-button" 
-            onClick={handleBack}
-          >
-            <span style={{ fontSize: '1.2rem' }}>←</span>
-            Não, Revisar Respostas
-          </button>
-          <button 
-            type="button" 
-            className="next-button" 
-            onClick={() => {
-              // Aqui você pode adicionar a lógica para enviar o formulário
-              Swal.fire({
-                title: 'Formulário Enviado!',
-                text: 'Suas respostas foram enviadas com sucesso.',
-                icon: 'success',
-                confirmButtonColor: '#646cff'
-              })
-            }}
-          >
-            Enviar Respostas
-          </button>
+        // Configuração do EmailJS para o email da empresa
+        const templateParams = {
+          from_name: formData.nome,
+          to_name: 'G2C Contabilidade',
+          to_email: 'rh@g2ccontabilidade.com.br',
+          nome_empresa: formData.nomeEmpresa,
+          nome: formData.nome,
+          cpf: formData.cpf,
+          email: formData.email,
+          telefone: formData.telefone,
+          celular: formData.celular,
+          data_nascimento: formData.dataNascimento,
+          endereco: formData.endereco,
+          bairro: formData.bairro,
+          cidade: formData.cidade,
+          estado: formData.estado,
+          cep: formData.cep,
+          cargo: formData.cargoFuncao,
+          salario: formData.salario,
+          data_admissao: formData.dataAdmissao,
+          optante_vt: formData.optanteValeTransporte,
+          valor_passagem: formData.valorPassagem,
+          banco: formData.banco,
+          agencia_conta: formData.agenciaConta,
+          tipo_conta: formData.tipoConta,
+          dependentes: JSON.stringify(formData.dependentes),
+          responsavel_preenchimento: formData.responsavelPreenchimento,
+          data_envio: new Date().toLocaleDateString('pt-BR')
+        }
+
+        // Envio do email para a empresa (com os dados do formulário)
+        await emailjs.send(
+          'service_aijwjgr',
+          'template_c83pm1p',
+          templateParams,
+          'JPlvEwQI87vaofEIx'
+        )
+
+        // Configuração do EmailJS para o email de confirmação do usuário
+        const confirmationParams = {
+          to_email: formData.email,
+          to_name: formData.nome,
+          company_name: 'G2C Contabilidade',
+          website_link: 'https://g2ccontabilidade.com.br'
+        }
+
+        // Envio do email de confirmação para o usuário
+        await emailjs.send(
+          'service_aijwjgr',
+          'template_um1kuwr',
+          confirmationParams,
+          'JPlvEwQI87vaofEIx'
+        )
+
+        Swal.fire({
+          title: 'Formulário Enviado!',
+          html: 'Suas respostas foram enviadas com sucesso.<br>Verifique sua caixa de entrada.',
+          icon: 'success',
+          confirmButtonColor: '#646cff'
+        })
+      } catch (error) {
+        console.error('Erro detalhado ao enviar email:', error)
+        Swal.fire({
+          title: 'Erro ao Enviar',
+          text: `Ocorreu um erro ao enviar o formulário: ${error.message || 'Erro desconhecido'}. Por favor, tente novamente.`,
+          icon: 'error',
+          confirmButtonColor: '#646cff'
+        })
+      }
+    }
+
+    return (
+      <>
+        <div className="form-group" style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <h2 style={{ color: '#333', fontSize: '1.5rem', marginBottom: '1rem' }}>
+            Deseja enviar as respostas do formulário?
+          </h2>
         </div>
-      </div>
-    </>
-  )
+
+        <div className="button-container">
+          <div className="button-group">
+            <button 
+              type="button" 
+              className="back-button" 
+              onClick={handleBack}
+            >
+              <span style={{ fontSize: '1.2rem' }}>←</span>
+              Não, Revisar Respostas
+            </button>
+            <button 
+              type="button" 
+              className="next-button" 
+              onClick={handleSubmit}
+            >
+              Enviar Respostas
+            </button>
+          </div>
+        </div>
+      </>
+    )
+  }
+
+  // Função auxiliar para converter arquivo em base64
+  const readFileAsBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64String = reader.result as string;
+        // Remove o prefixo "data:image/jpeg;base64," do resultado
+        const base64 = base64String.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
 
   return (
     <div className="app-container">

@@ -1,0 +1,347 @@
+<div style="font-family: system-ui, sans-serif, Arial; font-size: 14px; color: #212121">
+  <div style="max-width: 600px; margin: auto">
+    <div style="text-align: center; background-color: #d1d4ff; padding: 32px 16px; border-radius: 32px 32px 0 0;">
+      <a style="text-decoration: none; outline: none" href="https://g2ccontabilidade.com.br" target="_blank">
+        <img style="height: 32px; vertical-align: middle" height="32px" src="https://res.cloudinary.com/dag8tnyn9/image/upload/v1747938332/G2C_logo_azul_j0guir.png" alt="G2C Contabilidade" />
+      </a>
+    </div>
+
+    <div style="padding: 16px">
+      <h1 style="font-size: 26px; margin-bottom: 26px">Nova Admissão - {{nome_empresa}}</h1>
+
+      <h2 style="font-size: 20px; color: #444; margin-top: 20px; border-bottom: 2px solid #d1d4ff; padding-bottom: 10px;">Dados Pessoais</h2>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Nome:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{nome}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Nome da Mãe:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{nomeMae}} {{^nomeMae}}Sem informação{{/nomeMae}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Nome do Pai:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{nomePai}} {{^nomePai}}Sem informação{{/nomePai}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>CPF:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{cpf}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Email:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{email}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Telefone:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{telefone}} {{^telefone}}Sem informação{{/telefone}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Celular:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{celular}} {{^celular}}Sem informação{{/celular}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Data de Nascimento:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{data_nascimento}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Sexo:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{sexo}} {{^sexo}}Sem informação{{/sexo}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Estado Civil:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{estadoCivil}} {{^estadoCivil}}Sem informação{{/estadoCivil}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Cor da Pele:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{corPele}} {{^corPele}}Sem informação{{/corPele}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Escolaridade:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{escolaridade}} {{^escolaridade}}Sem informação{{/escolaridade}}</td>
+        </tr>
+      </table>
+
+      <h2 style="font-size: 20px; color: #444; margin-top: 20px; border-bottom: 2px solid #d1d4ff; padding-bottom: 10px;">Endereço</h2>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Endereço:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{endereco}} {{^endereco}}Sem informação{{/endereco}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Bairro:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{bairro}} {{^bairro}}Sem informação{{/bairro}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Cidade/UF:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{cidade}}/{{estado}} {{^cidade}}Sem informação{{/cidade}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>CEP:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{cep}} {{^cep}}Sem informação{{/cep}}</td>
+        </tr>
+      </table>
+
+      <h2 style="font-size: 20px; color: #444; margin-top: 20px; border-bottom: 2px solid #d1d4ff; padding-bottom: 10px;">Documentos</h2>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>PIS:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{pis}} {{^pis}}Sem informação{{/pis}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Documento de Identificação:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{docIdentificacao}} {{^docIdentificacao}}Sem informação{{/docIdentificacao}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Órgão Expedidor:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{orgaoExpeditor}} {{^orgaoExpeditor}}Sem informação{{/orgaoExpeditor}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Data de Expedição:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{dataExpedicao}} {{^dataExpedicao}}Sem informação{{/dataExpedicao}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Carteira de Trabalho:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{carteiraTrabalho}} {{^carteiraTrabalho}}Sem informação{{/carteiraTrabalho}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>CNH:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{cnh}} {{^cnh}}Sem informação{{/cnh}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Categoria CNH:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{categoriaCNH}} {{^categoriaCNH}}Sem informação{{/categoriaCNH}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Título de Eleitor:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{tituloEleitor}} {{^tituloEleitor}}Sem informação{{/tituloEleitor}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Carteira de Reservista:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{carteiraReservista}} {{^carteiraReservista}}Sem informação{{/carteiraReservista}}</td>
+        </tr>
+      </table>
+
+      <h2 style="font-size: 20px; color: #444; margin-top: 20px; border-bottom: 2px solid #d1d4ff; padding-bottom: 10px;">Dados Profissionais</h2>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Cargo/Função:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{cargo}} {{^cargo}}Sem informação{{/cargo}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Salário:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{salario}} {{^salario}}Sem informação{{/salario}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Data de Admissão:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{data_admissao}} {{^data_admissao}}Sem informação{{/data_admissao}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Período de Experiência:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{periodoExperiencia}} {{^periodoExperiencia}}Sem informação{{/periodoExperiencia}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Jornada de Trabalho:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{jornadaTrabalho}} {{^jornadaTrabalho}}Sem informação{{/jornadaTrabalho}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Jornada Parcial:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{jornadaParcial}} {{^jornadaParcial}}Sem informação{{/jornadaParcial}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Adicional de Periculosidade:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{adicionalPericulosidade}} {{^adicionalPericulosidade}}Sem informação{{/adicionalPericulosidade}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Adicional de Insalubridade:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{adicionalInsalubridade}} {{^adicionalInsalubridade}}Sem informação{{/adicionalInsalubridade}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Optante de Vale Transporte:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{optante_vt}} {{^optante_vt}}Sem informação{{/optante_vt}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Valor da Passagem:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{valor_passagem}} {{^valor_passagem}}Sem informação{{/valor_passagem}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Vale Combustível:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{valeCombustivel}} {{^valeCombustivel}}Sem informação{{/valeCombustivel}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Valor do Vale Combustível:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{valorValeCombustivel}} {{^valorValeCombustivel}}Sem informação{{/valorValeCombustivel}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Tipo de Desconto (Combustível):</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{tipoDescontoCombustivel}} {{^tipoDescontoCombustivel}}Sem informação{{/tipoDescontoCombustivel}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Valor do Desconto (Combustível):</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{valorDescontoCombustivel}} {{^valorDescontoCombustivel}}Sem informação{{/valorDescontoCombustivel}}</td>
+        </tr>
+      </table>
+
+      <h2 style="font-size: 20px; color: #444; margin-top: 20px; border-bottom: 2px solid #d1d4ff; padding-bottom: 10px;">Dados Bancários</h2>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Banco:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{banco}} {{^banco}}Sem informação{{/banco}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Agência/Conta:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{agencia_conta}} {{^agencia_conta}}Sem informação{{/agencia_conta}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Tipo de Conta:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{tipo_conta}} {{^tipo_conta}}Sem informação{{/tipo_conta}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Tipo de Chave PIX:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{tipoChavePix}} {{^tipoChavePix}}Sem informação{{/tipoChavePix}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Chave PIX:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{chavePix}} {{^chavePix}}Sem informação{{/chavePix}}</td>
+        </tr>
+      </table>
+
+      <h2 style="font-size: 20px; color: #444; margin-top: 20px; border-bottom: 2px solid #d1d4ff; padding-bottom: 10px;">Dados do Cônjuge</h2>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Nome do Cônjuge:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{nomeConjuge}} {{^nomeConjuge}}Sem informação{{/nomeConjuge}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>CPF do Cônjuge:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{cpfConjuge}} {{^cpfConjuge}}Sem informação{{/cpfConjuge}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Data de Nascimento do Cônjuge:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{dataNascimentoConjuge}} {{^dataNascimentoConjuge}}Sem informação{{/dataNascimentoConjuge}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>PIS do Cônjuge:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{pisConjuge}} {{^pisConjuge}}Sem informação{{/pisConjuge}}</td>
+        </tr>
+      </table>
+
+      <h2 style="font-size: 20px; color: #444; margin-top: 20px; border-bottom: 2px solid #d1d4ff; padding-bottom: 10px;">Dependentes</h2>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Dependente 1 - Nome:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{nomeDependente1}} {{^nomeDependente1}}Sem informação{{/nomeDependente1}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Dependente 1 - CPF:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{cpfDependente1}} {{^cpfDependente1}}Sem informação{{/cpfDependente1}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Dependente 1 - Data de Nascimento:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{dataNascimentoDependente1}} {{^dataNascimentoDependente1}}Sem informação{{/dataNascimentoDependente1}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Dependente 1 - Parentesco:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{parentescoDependente1}} {{^parentescoDependente1}}Sem informação{{/parentescoDependente1}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Dependente 1 - IR:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{irDependente1}} {{^irDependente1}}Sem informação{{/irDependente1}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Dependente 1 - INSS:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{inssDependente1}} {{^inssDependente1}}Sem informação{{/inssDependente1}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Dependente 1 - Plano de Saúde:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{planoSaudeDependente1}} {{^planoSaudeDependente1}}Sem informação{{/planoSaudeDependente1}}</td>
+        </tr>
+      </table>
+
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Dependente 2 - Nome:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{nomeDependente2}} {{^nomeDependente2}}Sem informação{{/nomeDependente2}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Dependente 2 - CPF:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{cpfDependente2}} {{^cpfDependente2}}Sem informação{{/cpfDependente2}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Dependente 2 - Data de Nascimento:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{dataNascimentoDependente2}} {{^dataNascimentoDependente2}}Sem informação{{/dataNascimentoDependente2}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Dependente 2 - Parentesco:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{parentescoDependente2}} {{^parentescoDependente2}}Sem informação{{/parentescoDependente2}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Dependente 2 - IR:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{irDependente2}} {{^irDependente2}}Sem informação{{/irDependente2}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Dependente 2 - INSS:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{inssDependente2}} {{^inssDependente2}}Sem informação{{/inssDependente2}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Dependente 2 - Plano de Saúde:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{planoSaudeDependente2}} {{^planoSaudeDependente2}}Sem informação{{/planoSaudeDependente2}}</td>
+        </tr>
+      </table>
+
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Dependente 3 - Nome:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{nomeDependente3}} {{^nomeDependente3}}Sem informação{{/nomeDependente3}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Dependente 3 - CPF:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{cpfDependente3}} {{^cpfDependente3}}Sem informação{{/cpfDependente3}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Dependente 3 - Data de Nascimento:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{dataNascimentoDependente3}} {{^dataNascimentoDependente3}}Sem informação{{/dataNascimentoDependente3}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Dependente 3 - Parentesco:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{parentescoDependente3}} {{^parentescoDependente3}}Sem informação{{/parentescoDependente3}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Dependente 3 - IR:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{irDependente3}} {{^irDependente3}}Sem informação{{/irDependente3}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Dependente 3 - INSS:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{inssDependente3}} {{^inssDependente3}}Sem informação{{/inssDependente3}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Dependente 3 - Plano de Saúde:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{planoSaudeDependente3}} {{^planoSaudeDependente3}}Sem informação{{/planoSaudeDependente3}}</td>
+        </tr>
+      </table>
+
+      <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">
+        <p><strong>Responsável pelo preenchimento:</strong> {{responsavel_preenchimento}}</p>
+        <p><strong>Data de envio:</strong> {{data_envio}}</p>
+      </div>
+    </div>
+
+    <div style="text-align: center; background-color: #d1d4ff; padding: 16px; border-radius: 0 0 32px 32px;">
+      <p>Para qualquer dúvida, você pode nos contatar por telefone</p>
+      <p>
+        <strong>
+          <a href="tel:+5524999450044" style="text-decoration: none; outline: none; color: #212121">
+            +55 24 99945-0044
+          </a>
+        </strong>
+      </p>
+      <p>ou por email</p>
+      <p>
+        <strong>
+          <a href="mailto:atendimento@g2ccontabilidade.com.br" style="text-decoration: none; outline: none; color: #212121">
+            atendimento@g2ccontabilidade.com.br
+          </a>
+        </strong>
+      </p>
+    </div>
+  </div>
+</div>
