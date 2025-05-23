@@ -7,9 +7,11 @@ export default defineConfig({
   server: {
     host: true,
     port: Number(process.env.PORT) || 3000,
+    allowedHosts: ['formsg2c.onrender.com']
   },
   preview: {
     port: Number(process.env.PORT) || 3000,
     host: true,
+    allowedHosts: ['formsg2c.onrender.com']
   }
 })
