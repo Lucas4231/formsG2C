@@ -479,33 +479,60 @@ function App() {
   }
 
   const validatePage11 = () => {
-    const requiredFields = {
-      nomeResponsavelPreenchimento: 'Nome do responsável pelo preenchimento',
-      cargoFuncao: 'Cargo/Função',
-      salario: 'Salário',
-      dataAdmissao: 'Data de admissão',
-      periodoExperiencia: 'Período de Experiência',
-      jornadaTrabalho: 'Jornada de Trabalho',
-      jornadaParcial: 'Jornada Parcial',
-      adicionalPericulosidade: 'Adicional de Periculosidade',
-      adicionalInsalubridade: 'Adicional de Insalubridade',
-      optanteValeTransporte: 'Optante de vale transporte',
-      valeCombustivel: 'Vale Combustível'
-    }
+    // Se o responsável for a empresa, valida os campos específicos
+    if (formData.responsavelPreenchimento === 'Empresa') {
+      const requiredFields = {
+        nomeResponsavelPreenchimento: 'Nome do responsável pelo preenchimento',
+        cargoFuncao: 'Cargo/Função',
+        salario: 'Salário',
+        dataAdmissao: 'Data de admissão',
+        periodoExperiencia: 'Período de Experiência',
+        jornadaTrabalho: 'Jornada de Trabalho',
+        jornadaParcial: 'Jornada Parcial',
+        adicionalPericulosidade: 'Adicional de Periculosidade',
+        adicionalInsalubridade: 'Adicional de Insalubridade',
+        optanteValeTransporte: 'Optante de vale transporte',
+        valeCombustivel: 'Vale Combustível'
+      }
 
-    const emptyFields = Object.entries(requiredFields)
-      .filter(([key]) => !formData[key])
-      .map(([_, label]) => label)
+      const emptyFields = Object.entries(requiredFields)
+        .filter(([key]) => !formData[key])
+        .map(([_, label]) => label)
 
-    if (emptyFields.length > 0) {
-      Swal.fire({
-        title: 'Campos Obrigatórios',
-        html: `Por favor, preencha os seguintes campos:<br><br>${emptyFields.join('<br>')}`,
-        icon: 'warning',
-        confirmButtonText: 'OK',
-        confirmButtonColor: '#646cff'
-      })
-      return false
+      if (emptyFields.length > 0) {
+        Swal.fire({
+          title: 'Campos Obrigatórios',
+          html: `Por favor, preencha os seguintes campos:<br><br>${emptyFields.join('<br>')}`,
+          icon: 'warning',
+          confirmButtonText: 'OK',
+          confirmButtonColor: '#646cff'
+        })
+        return false
+      }
+    } else {
+      // Se o responsável for o empregado, valida apenas os campos básicos
+      const requiredFields = {
+        nomeResponsavelPreenchimento: 'Nome do responsável pelo preenchimento',
+        cargoFuncao: 'Cargo/Função',
+        salario: 'Salário',
+        dataAdmissao: 'Data de admissão',
+        optanteValeTransporte: 'Optante de vale transporte'
+      }
+
+      const emptyFields = Object.entries(requiredFields)
+        .filter(([key]) => !formData[key])
+        .map(([_, label]) => label)
+
+      if (emptyFields.length > 0) {
+        Swal.fire({
+          title: 'Campos Obrigatórios',
+          html: `Por favor, preencha os seguintes campos:<br><br>${emptyFields.join('<br>')}`,
+          icon: 'warning',
+          confirmButtonText: 'OK',
+          confirmButtonColor: '#646cff'
+        })
+        return false
+      }
     }
 
     // Validações condicionais
@@ -570,9 +597,44 @@ function App() {
         break
       case 5:
         canProceed = validatePage5()
+        if (canProceed) {
+          if (formData.possuiDependentes) {
+            // Se possui dependentes, vai para a primeira página de dependente
+            setCurrentPage(6)
+            return
+          } else {
+            // Se não possui dependentes, pula para a página do cônjuge
+            setCurrentPage(8)
+            return
+          }
+        }
         break
       case 6:
         canProceed = validateDependentePage(currentDependenteIndex)
+        if (canProceed) {
+          const dependente = formData.dependentes[currentDependenteIndex]
+          if (dependente?.possuiOutroDependente === 'Sim') {
+            // Se possui outro dependente, adiciona um novo e vai para a próxima página
+            setFormData(prev => ({
+              ...prev,
+              dependentes: [...prev.dependentes, {
+                nome: '',
+                cpf: '',
+                dataNascimento: '',
+                municipioNascimento: '',
+                ufNascimento: '',
+                tipoDependente: '',
+                possuiOutroDependente: ''
+              }]
+            }))
+            setCurrentDependenteIndex(prev => prev + 1)
+            setCurrentPage(6)
+          } else {
+            // Se não possui outro dependente, vai para a página do cônjuge
+            setCurrentPage(8)
+          }
+          return
+        }
         break
       case 7:
         canProceed = validatePage9()
@@ -592,15 +654,7 @@ function App() {
     }
 
     if (canProceed) {
-      if (currentPage === 5 && formData.possuiDependentes) {
-        if (currentDependenteIndex < formData.dependentes.length - 1) {
-          setCurrentDependenteIndex(prev => prev + 1)
-        } else {
-          setCurrentPage(prev => prev + 1)
-        }
-      } else {
-        setCurrentPage(prev => prev + 1)
-      }
+      setCurrentPage(prev => prev + 1)
     }
   }
 
@@ -2437,6 +2491,118 @@ function App() {
   const renderPage13 = () => {
     const handleSubmit = async () => {
       try {
+        // Função auxiliar para tratar campos vazios
+        const getValue = (value: any) => {
+          if (value === null || value === undefined || value === '' || value === false) {
+            return 'Sem informação'
+          }
+          return value
+        }
+
+        // Função para tratar campos específicos baseado no responsável
+        const getResponsavelValue = (value: any, isEmpresaField: boolean) => {
+          if (formData.responsavelPreenchimento === 'Empresa') {
+            return getValue(value)
+          } else {
+            return isEmpresaField ? 'Sem informação' : getValue(value)
+          }
+        }
+
+        // Função para formatar valores dos selects
+        const formatSelectValue = (value: string, type: string) => {
+          if (!value) return 'Sem informação'
+
+          switch (type) {
+            case 'sexo':
+              switch (value) {
+                case 'masculino': return 'Masculino'
+                case 'feminino': return 'Feminino'
+                case 'outro': return 'Outro'
+                default: return value
+              }
+            case 'estadoCivil':
+              switch (value) {
+                case 'solteiro': return 'Solteiro(a)'
+                case 'casado': return 'Casado(a)'
+                case 'divorciado': return 'Divorciado(a)'
+                case 'viuvo': return 'Viúvo(a)'
+                case 'separado': return 'Separado(a)'
+                default: return value
+              }
+            case 'corPele':
+              switch (value) {
+                case 'branca': return 'Branca'
+                case 'preta': return 'Preta'
+                case 'parda': return 'Parda'
+                case 'amarela': return 'Amarela'
+                case 'indigena': return 'Indígena'
+                default: return value
+              }
+            case 'escolaridade':
+              switch (value) {
+                case 'analfabeto': return 'Analfabeto'
+                case 'ate_5_ano_incompleto': return 'Até o 5º ano incompleto do Ensino Fundamental'
+                case '5_ano_completo': return '5º ano completo do Ensino Fundamental'
+                case '6_ao_9_ano_incompleto': return 'Do 6º ao 9º ano do Ensino Fundamental incompleto'
+                case 'ensino_fundamental_completo': return 'Ensino Fundamental completo'
+                case 'ensino_medio_incompleto': return 'Ensino Médio incompleto'
+                case 'ensino_medio_completo': return 'Ensino Médio completo'
+                case 'ensino_superior_incompleto': return 'Ensino Superior incompleto'
+                case 'ensino_superior_completo': return 'Ensino Superior completo'
+                case 'pos_graduacao': return 'Pós Graduação'
+                case 'mestrado': return 'Mestrado'
+                case 'doutorado': return 'Doutorado'
+                default: return value
+              }
+            case 'tipoConta':
+              switch (value) {
+                case 'corrente': return 'Conta Corrente'
+                case 'poupanca': return 'Conta Poupança'
+                case 'salario': return 'Conta Salário'
+                default: return value
+              }
+            case 'tipoChavePix':
+              switch (value) {
+                case 'cpf': return 'CPF'
+                case 'email': return 'E-mail'
+                case 'celular': return 'Nº Celular'
+                default: return value
+              }
+            case 'periodoExperiencia':
+              switch (value) {
+                case '30+0': return '30 + 0'
+                case '45+0': return '45 + 0'
+                case '30+30': return '30 + 30'
+                case '45+45': return '45 + 45'
+                case '30+60': return '30 + 60'
+                case '60+30': return '60 + 30'
+                default: return value
+              }
+            case 'jornadaTrabalho':
+              switch (value) {
+                case '220_44': return '220 horas mensais e 44 horas semanais'
+                case '200_40': return '200 horas mensais e 40 horas semanais'
+                case '180_36': return '180 horas mensais e 36 horas semanais'
+                default: return value
+              }
+            case 'jornadaParcial':
+              switch (value) {
+                case '150_30': return '150 horas mensais e 30 horas semanais'
+                case '130_26': return '130 horas mensais e 26 horas semanais'
+                case '100_20': return '100 horas mensais e 20 horas semanais'
+                default: return value
+              }
+            case 'tipoDescontoCombustivel':
+              switch (value) {
+                case 'valor': return 'Valor em Reais'
+                case 'percentual': return 'Percentual'
+                default: return value
+              }
+            default:
+              return value
+          }
+        }
+
         // Preparar os anexos
         const attachments = [];
         if (formData.foto) {
@@ -2454,31 +2620,71 @@ function App() {
 
         // Configuração do EmailJS para o email da empresa
         const templateParams = {
-          from_name: formData.nome,
+          from_name: getValue(formData.nome),
           to_name: 'G2C Contabilidade',
           to_email: 'rh@g2ccontabilidade.com.br',
-          nome_empresa: formData.nomeEmpresa,
-          nome: formData.nome,
-          cpf: formData.cpf,
-          email: formData.email,
-          telefone: formData.telefone,
-          celular: formData.celular,
-          data_nascimento: formData.dataNascimento,
-          endereco: formData.endereco,
-          bairro: formData.bairro,
-          cidade: formData.cidade,
-          estado: formData.estado,
-          cep: formData.cep,
-          cargo: formData.cargoFuncao,
-          salario: formData.salario,
-          data_admissao: formData.dataAdmissao,
-          optante_vt: formData.optanteValeTransporte,
-          valor_passagem: formData.valorPassagem,
-          banco: formData.banco,
-          agencia_conta: formData.agenciaConta,
-          tipo_conta: formData.tipoConta,
-          dependentes: JSON.stringify(formData.dependentes),
-          responsavel_preenchimento: formData.responsavelPreenchimento,
+          nome_empresa: getValue(formData.nomeEmpresa),
+          nome_responsavel: getValue(formData.nomeResponsavel),
+          nome: getValue(formData.nome),
+          nome_mae: getValue(formData.nomeMae),
+          nome_pai: getValue(formData.nomePai),
+          sexo: formatSelectValue(formData.sexo, 'sexo'),
+          email: getValue(formData.email),
+          telefone: getValue(formData.telefone),
+          celular: getValue(formData.celular),
+          data_nascimento: getValue(formData.dataNascimento),
+          municipio_nascimento: getValue(formData.municipioNascimento),
+          estado_civil: formatSelectValue(formData.estadoCivil, 'estadoCivil'),
+          cor_pele: formatSelectValue(formData.corPele, 'corPele'),
+          escolaridade: formatSelectValue(formData.escolaridade, 'escolaridade'),
+          cpf: getValue(formData.cpf),
+          pis: getValue(formData.pis),
+          doc_identificacao: getValue(formData.docIdentificacao),
+          orgao_expeditor: getValue(formData.orgaoExpeditor),
+          data_expedicao: getValue(formData.dataExpedicao),
+          carteira_trabalho: getValue(formData.carteiraTrabalho),
+          data_expedicao_ct: getValue(formData.dataExpedicaoCT),
+          cnh: getValue(formData.cnh),
+          categoria_cnh: getValue(formData.categoriaCNH),
+          data_expedicao_cnh: getValue(formData.dataExpedicaoCNH),
+          data_validade_cnh: getValue(formData.dataValidadeCNH),
+          data_primeira_habilitacao: getValue(formData.dataPrimeiraHabilitacao),
+          titulo_eleitor: getValue(formData.tituloEleitor),
+          carteira_reservista: getValue(formData.carteiraReservista),
+          data_expedicao_reservista: getValue(formData.dataExpedicaoReservista),
+          endereco: getValue(formData.endereco),
+          bairro: getValue(formData.bairro),
+          cidade: getValue(formData.cidade),
+          estado: getValue(formData.estado),
+          cep: getValue(formData.cep),
+          observacoes: getValue(formData.observacoes),
+          banco: getValue(formData.banco),
+          agencia_conta: getValue(formData.agenciaConta),
+          tipo_conta: formatSelectValue(formData.tipoConta, 'tipoConta'),
+          tipo_chave_pix: formatSelectValue(formData.tipoChavePix, 'tipoChavePix'),
+          chave_pix: getValue(formData.chavePix),
+          observacoes_bancarias: getValue(formData.observacoesBancarias),
+          possui_dependentes: formData.possuiDependentes ? 'Sim' : 'Não',
+          dependentes: formData.dependentes.length > 0 ? JSON.stringify(formData.dependentes) : 'Sem dependentes',
+          nome_conjuge: getValue(formData.nomeConjuge),
+          cpf_conjuge: getValue(formData.cpfConjuge),
+          data_nascimento_conjuge: getValue(formData.dataNascimentoConjuge),
+          responsavel_preenchimento: getValue(formData.responsavelPreenchimento),
+          cargo_funcao: getValue(formData.cargoFuncao),
+          salario: getValue(formData.salario),
+          data_admissao: getValue(formData.dataAdmissao),
+          periodo_experiencia: getResponsavelValue(formatSelectValue(formData.periodoExperiencia, 'periodoExperiencia'), true),
+          jornada_trabalho: getResponsavelValue(formatSelectValue(formData.jornadaTrabalho, 'jornadaTrabalho'), true),
+          jornada_parcial: getResponsavelValue(formatSelectValue(formData.jornadaParcial, 'jornadaParcial'), true),
+          adicional_periculosidade: getResponsavelValue(formData.adicionalPericulosidade, true),
+          adicional_insalubridade: getResponsavelValue(formData.adicionalInsalubridade, true),
+          optante_vt: getValue(formData.optanteValeTransporte),
+          valor_passagem: getValue(formData.valorPassagem),
+          quantidade_passagem: getValue(formData.quantidadePassagem),
+          vale_combustivel: getValue(formData.valeCombustivel),
+          valor_vale_combustivel: getValue(formData.valorValeCombustivel),
+          tipo_desconto_combustivel: getResponsavelValue(formatSelectValue(formData.tipoDescontoCombustivel, 'tipoDescontoCombustivel'), true),
+          valor_desconto_combustivel: getValue(formData.valorDescontoCombustivel),
           data_envio: new Date().toLocaleDateString('pt-BR')
         }
 
@@ -2490,10 +2696,15 @@ function App() {
           'JPlvEwQI87vaofEIx'
         )
 
+        // Verifica se o email do usuário foi preenchido
+        if (!formData.email) {
+          throw new Error('Email não preenchido. Não é possível enviar a confirmação.')
+        }
+
         // Configuração do EmailJS para o email de confirmação do usuário
         const confirmationParams = {
           to_email: formData.email,
-          to_name: formData.nome,
+          to_name: formData.nome || 'Usuário',
           company_name: 'G2C Contabilidade',
           website_link: 'https://g2ccontabilidade.com.br'
         }
