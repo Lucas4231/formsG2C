@@ -13,5 +13,17 @@ export default defineConfig({
     port: Number(process.env.PORT) || 3000,
     host: true,
     allowedHosts: ['formsg2c.onrender.com']
+  },
+  define: {
+    'process.env': {
+      VITE_CLOUDINARY_CLOUD_NAME: JSON.stringify(process.env.VITE_CLOUDINARY_CLOUD_NAME),
+      VITE_CLOUDINARY_API_KEY: JSON.stringify(process.env.VITE_CLOUDINARY_API_KEY),
+      VITE_CLOUDINARY_API_SECRET: JSON.stringify(process.env.VITE_CLOUDINARY_API_SECRET)
+    }
+  },
+  resolve: {
+    alias: {
+      'cloudinary': 'cloudinary/lib/cloudinary'
+    }
   }
 })

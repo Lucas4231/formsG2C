@@ -4,6 +4,7 @@ import './App.css'
 import logo from './assets/G2C_logo_azul.png'
 import Swal from 'sweetalert2'
 import emailjs from '@emailjs/browser'
+import { uploadToCloudinary } from './cloudinary'
 
 interface Dependente {
   nome: string;
@@ -116,6 +117,87 @@ const estados = [
   { sigla: 'SE', nome: 'Sergipe' },
   { sigla: 'TO', nome: 'Tocantins' }
 ];
+
+// Função para formatar valores dos selects
+const formatSelectValue = (value: string, type: string) => {
+  if (!value) return 'Sem informação';
+  
+  const selectValues: Record<string, Record<string, string>> = {
+    sexo: {
+      masculino: 'Masculino',
+      feminino: 'Feminino',
+      outro: 'Outro'
+    },
+    estadoCivil: {
+      solteiro: 'Solteiro(a)',
+      casado: 'Casado(a)',
+      divorciado: 'Divorciado(a)',
+      viuvo: 'Viúvo(a)',
+      separado: 'Separado(a)'
+    },
+    corPele: {
+      branca: 'Branca',
+      preta: 'Preta',
+      parda: 'Parda',
+      amarela: 'Amarela',
+      indigena: 'Indígena'
+    },
+    escolaridade: {
+      analfabeto: 'Analfabeto',
+      ate_5_ano_incompleto: 'Até o 5º ano incompleto do Ensino Fundamental',
+      '5_ano_completo': '5º ano completo do Ensino Fundamental',
+      '6_ao_9_ano_incompleto': 'Do 6º ao 9º ano do Ensino Fundamental incompleto',
+      ensino_fundamental_completo: 'Ensino Fundamental completo',
+      ensino_medio_incompleto: 'Ensino Médio incompleto',
+      ensino_medio_completo: 'Ensino Médio completo',
+      ensino_superior_incompleto: 'Ensino Superior incompleto',
+      ensino_superior_completo: 'Ensino Superior completo',
+      pos_graduacao: 'Pós Graduação',
+      mestrado: 'Mestrado',
+      doutorado: 'Doutorado'
+    },
+    tipoConta: {
+      corrente: 'Conta Corrente',
+      poupanca: 'Conta Poupança',
+      salario: 'Conta Salário'
+    },
+    tipoChavePix: {
+      cpf: 'CPF',
+      email: 'E-mail',
+      celular: 'Nº Celular'
+    },
+    periodoExperiencia: {
+      '30+0': '30 + 0',
+      '45+0': '45 + 0',
+      '30+30': '30 + 30',
+      '45+45': '45 + 45',
+      '30+60': '30 + 60',
+      '60+30': '60 + 30'
+    },
+    jornadaTrabalho: {
+      '220_44': '220 horas mensais e 44 horas semanais',
+      '200_40': '200 horas mensais e 40 horas semanais',
+      '180_36': '180 horas mensais e 36 horas semanais'
+    },
+    jornadaParcial: {
+      '150_30': '150 horas mensais e 30 horas semanais',
+      '130_26': '130 horas mensais e 26 horas semanais',
+      '100_20': '100 horas mensais e 20 horas semanais'
+    },
+    tipoDescontoCombustivel: {
+      valor: 'Valor em Reais',
+      percentual: 'Percentual'
+    }
+  };
+
+  return selectValues[type]?.[value] || value;
+};
+
+// Função para tratar campos específicos do responsável
+const getResponsavelValue = (value: string, isEmpresa: boolean) => {
+  if (!isEmpresa) return 'Sem informação';
+  return value;
+};
 
 function App() {
   const [currentPage, setCurrentPage] = useState(1)
@@ -442,14 +524,15 @@ function App() {
   }
 
   const validatePage10 = () => {
-    const requiredFields = {
+    // Se o responsável for o empregado, valida apenas os campos básicos
+    const requiredFields: Record<string, string> = {
       cargoFuncao: 'Cargo/Função',
       dataAdmissao: 'Data de admissão',
       optanteValeTransporte: 'Optante de vale transporte'
     }
 
     const emptyFields = Object.entries(requiredFields)
-      .filter(([key]) => !formData[key])
+      .filter(([key]) => !formData[key as keyof FormData])
       .map(([_, label]) => label)
 
     if (emptyFields.length > 0) {
@@ -481,7 +564,7 @@ function App() {
   const validatePage11 = () => {
     // Se o responsável for a empresa, valida os campos específicos
     if (formData.responsavelPreenchimento === 'Empresa') {
-      const requiredFields = {
+      const requiredFields: Record<string, string> = {
         nomeResponsavelPreenchimento: 'Nome do responsável pelo preenchimento',
         cargoFuncao: 'Cargo/Função',
         salario: 'Salário',
@@ -496,7 +579,7 @@ function App() {
       }
 
       const emptyFields = Object.entries(requiredFields)
-        .filter(([key]) => !formData[key])
+        .filter(([key]) => !formData[key as keyof FormData])
         .map(([_, label]) => label)
 
       if (emptyFields.length > 0) {
@@ -511,7 +594,7 @@ function App() {
       }
     } else {
       // Se o responsável for o empregado, valida apenas os campos básicos
-      const requiredFields = {
+      const requiredFields: Record<string, string> = {
         nomeResponsavelPreenchimento: 'Nome do responsável pelo preenchimento',
         cargoFuncao: 'Cargo/Função',
         salario: 'Salário',
@@ -520,7 +603,7 @@ function App() {
       }
 
       const emptyFields = Object.entries(requiredFields)
-        .filter(([key]) => !formData[key])
+        .filter(([key]) => !formData[key as keyof FormData])
         .map(([_, label]) => label)
 
       if (emptyFields.length > 0) {
@@ -643,12 +726,28 @@ function App() {
         canProceed = validatePage8()
         break
       case 9:
-        canProceed = validatePage10()
+        canProceed = validatePage9()
+        if (canProceed) {
+          // Após validar a página 9, direciona para a página correta baseado no responsável
+          if (formData.responsavelPreenchimento === 'Empregado') {
+            setCurrentPage(10) // Vai para a página de informações do empregado
+          } else {
+            setCurrentPage(11) // Vai para a página da empresa
+          }
+          return
+        }
         break
       case 10:
-        canProceed = validatePage11()
+        canProceed = validatePage10()
+        if (canProceed) {
+          setCurrentPage(12) // Vai para a página dos termos de uso
+          return
+        }
         break
       case 11:
+        canProceed = validatePage11()
+        break
+      case 12:
         canProceed = validatePage12()
         break
     }
@@ -1748,27 +1847,7 @@ function App() {
 
   // Página 8 - Dados do Cônjuge
   const validatePage8 = () => {
-    const requiredFields = {
-      nomeConjuge: 'Nome do Cônjuge',
-      cpfConjuge: 'CPF do Cônjuge',
-      dataNascimentoConjuge: 'Data de Nascimento do Cônjuge'
-    }
-
-    const emptyFields = Object.entries(requiredFields)
-      .filter(([key]) => !formData[key])
-      .map(([_, label]) => label)
-
-    if (emptyFields.length > 0) {
-      Swal.fire({
-        title: 'Campos Obrigatórios',
-        html: `Por favor, preencha os seguintes campos:<br><br>${emptyFields.join('<br>')}`,
-        icon: 'warning',
-        confirmButtonText: 'OK',
-        confirmButtonColor: '#646cff'
-      })
-      return false
-    }
-
+    // Removendo a validação obrigatória dos campos do cônjuge
     return true
   }
 
@@ -1778,7 +1857,7 @@ function App() {
       <p className="required-field">* Indica uma pergunta obrigatória</p>
       
       <div className="form-group">
-        <label htmlFor="nomeConjuge">Nome Completo do Cônjuge<span className="required-mark">*</span></label>
+        <label htmlFor="nomeConjuge">Nome Completo do Cônjuge</label>
         <input
           type="text"
           id="nomeConjuge"
@@ -1791,7 +1870,7 @@ function App() {
       </div>
 
       <div className="form-group">
-        <label htmlFor="cpfConjuge">CPF do Cônjuge<span className="required-mark">*</span></label>
+        <label htmlFor="cpfConjuge">CPF do Cônjuge</label>
         <input
           type="text"
           id="cpfConjuge"
@@ -1804,7 +1883,7 @@ function App() {
       </div>
 
       <div className="form-group">
-        <label htmlFor="dataNascimentoConjuge">Data de Nascimento do Cônjuge<span className="required-mark">*</span></label>
+        <label htmlFor="dataNascimentoConjuge">Data de Nascimento do Cônjuge</label>
         <input
           type="text"
           id="dataNascimentoConjuge"
@@ -2491,6 +2570,18 @@ function App() {
   const renderPage13 = () => {
     const handleSubmit = async () => {
       try {
+        // Upload dos arquivos para o Cloudinary
+        let fotoUrl = '';
+        let documentoUrl = '';
+
+        if (formData.foto) {
+          fotoUrl = await uploadToCloudinary(formData.foto);
+        }
+
+        if (formData.documentoIdentidade) {
+          documentoUrl = await uploadToCloudinary(formData.documentoIdentidade);
+        }
+
         // Função auxiliar para tratar campos vazios
         const getValue = (value: any) => {
           if (value === null || value === undefined || value === '' || value === false) {
@@ -2499,130 +2590,13 @@ function App() {
           return value
         }
 
-        // Função para tratar campos específicos baseado no responsável
-        const getResponsavelValue = (value: any, isEmpresaField: boolean) => {
-          if (formData.responsavelPreenchimento === 'Empresa') {
-            return getValue(value)
-          } else {
-            return isEmpresaField ? 'Sem informação' : getValue(value)
-          }
-        }
-
-        // Função para formatar valores dos selects
-        const formatSelectValue = (value: string, type: string) => {
-          if (!value) return 'Sem informação'
-
-          switch (type) {
-            case 'sexo':
-              switch (value) {
-                case 'masculino': return 'Masculino'
-                case 'feminino': return 'Feminino'
-                case 'outro': return 'Outro'
-                default: return value
-              }
-            case 'estadoCivil':
-              switch (value) {
-                case 'solteiro': return 'Solteiro(a)'
-                case 'casado': return 'Casado(a)'
-                case 'divorciado': return 'Divorciado(a)'
-                case 'viuvo': return 'Viúvo(a)'
-                case 'separado': return 'Separado(a)'
-                default: return value
-              }
-            case 'corPele':
-              switch (value) {
-                case 'branca': return 'Branca'
-                case 'preta': return 'Preta'
-                case 'parda': return 'Parda'
-                case 'amarela': return 'Amarela'
-                case 'indigena': return 'Indígena'
-                default: return value
-              }
-            case 'escolaridade':
-              switch (value) {
-                case 'analfabeto': return 'Analfabeto'
-                case 'ate_5_ano_incompleto': return 'Até o 5º ano incompleto do Ensino Fundamental'
-                case '5_ano_completo': return '5º ano completo do Ensino Fundamental'
-                case '6_ao_9_ano_incompleto': return 'Do 6º ao 9º ano do Ensino Fundamental incompleto'
-                case 'ensino_fundamental_completo': return 'Ensino Fundamental completo'
-                case 'ensino_medio_incompleto': return 'Ensino Médio incompleto'
-                case 'ensino_medio_completo': return 'Ensino Médio completo'
-                case 'ensino_superior_incompleto': return 'Ensino Superior incompleto'
-                case 'ensino_superior_completo': return 'Ensino Superior completo'
-                case 'pos_graduacao': return 'Pós Graduação'
-                case 'mestrado': return 'Mestrado'
-                case 'doutorado': return 'Doutorado'
-                default: return value
-              }
-            case 'tipoConta':
-              switch (value) {
-                case 'corrente': return 'Conta Corrente'
-                case 'poupanca': return 'Conta Poupança'
-                case 'salario': return 'Conta Salário'
-                default: return value
-              }
-            case 'tipoChavePix':
-              switch (value) {
-                case 'cpf': return 'CPF'
-                case 'email': return 'E-mail'
-                case 'celular': return 'Nº Celular'
-                default: return value
-              }
-            case 'periodoExperiencia':
-              switch (value) {
-                case '30+0': return '30 + 0'
-                case '45+0': return '45 + 0'
-                case '30+30': return '30 + 30'
-                case '45+45': return '45 + 45'
-                case '30+60': return '30 + 60'
-                case '60+30': return '60 + 30'
-                default: return value
-              }
-            case 'jornadaTrabalho':
-              switch (value) {
-                case '220_44': return '220 horas mensais e 44 horas semanais'
-                case '200_40': return '200 horas mensais e 40 horas semanais'
-                case '180_36': return '180 horas mensais e 36 horas semanais'
-                default: return value
-              }
-            case 'jornadaParcial':
-              switch (value) {
-                case '150_30': return '150 horas mensais e 30 horas semanais'
-                case '130_26': return '130 horas mensais e 26 horas semanais'
-                case '100_20': return '100 horas mensais e 20 horas semanais'
-                default: return value
-              }
-            case 'tipoDescontoCombustivel':
-              switch (value) {
-                case 'valor': return 'Valor em Reais'
-                case 'percentual': return 'Percentual'
-                default: return value
-              }
-            default:
-              return value
-          }
-        }
-
-        // Preparar os anexos
-        const attachments = [];
-        if (formData.foto) {
-          attachments.push({
-            filename: formData.foto.name,
-            content: await readFileAsBase64(formData.foto)
-          });
-        }
-        if (formData.documentoIdentidade) {
-          attachments.push({
-            filename: formData.documentoIdentidade.name,
-            content: await readFileAsBase64(formData.documentoIdentidade)
-          });
-        }
-
         // Configuração do EmailJS para o email da empresa
         const templateParams = {
           from_name: getValue(formData.nome),
           to_name: 'G2C Contabilidade',
           to_email: 'rh@g2ccontabilidade.com.br',
+          reply_to: getValue(formData.email),
+          message: 'Nova admissão recebida',
           nome_empresa: getValue(formData.nomeEmpresa),
           nome_responsavel: getValue(formData.nomeResponsavel),
           nome: getValue(formData.nome),
@@ -2685,52 +2659,128 @@ function App() {
           valor_vale_combustivel: getValue(formData.valorValeCombustivel),
           tipo_desconto_combustivel: getResponsavelValue(formatSelectValue(formData.tipoDescontoCombustivel, 'tipoDescontoCombustivel'), true),
           valor_desconto_combustivel: getValue(formData.valorDescontoCombustivel),
-          data_envio: new Date().toLocaleDateString('pt-BR')
+          data_envio: new Date().toLocaleDateString('pt-BR'),
+          foto_url: fotoUrl || 'Sem foto enviada',
+          documento_url: documentoUrl || 'Sem documento enviado'
         }
 
-        // Envio do email para a empresa (com os dados do formulário)
-        await emailjs.send(
-          'service_aijwjgr',
-          'template_c83pm1p',
-          templateParams,
-          'JPlvEwQI87vaofEIx'
-        )
+        // Verifica se as variáveis de ambiente do EmailJS estão configuradas
+        const emailjsServiceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+        const emailjsTemplateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+        const emailjsPublicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
-        // Verifica se o email do usuário foi preenchido
-        if (!formData.email) {
-          throw new Error('Email não preenchido. Não é possível enviar a confirmação.')
+        console.log('Configurações do EmailJS:', {
+          serviceId: emailjsServiceId,
+          templateId: emailjsTemplateId,
+          publicKey: emailjsPublicKey?.substring(0, 5) + '...',
+          to_email: templateParams.to_email,
+          from_name: templateParams.from_name,
+          reply_to: templateParams.reply_to
+        });
+
+        if (!emailjsServiceId || !emailjsTemplateId || !emailjsPublicKey) {
+          throw new Error('Configurações do EmailJS não encontradas');
         }
 
-        // Configuração do EmailJS para o email de confirmação do usuário
-        const confirmationParams = {
-          to_email: formData.email,
-          to_name: formData.nome || 'Usuário',
-          company_name: 'G2C Contabilidade',
-          website_link: 'https://g2ccontabilidade.com.br'
+        if (!templateParams.to_email) {
+          throw new Error('Email do destinatário não configurado');
         }
 
-        // Envio do email de confirmação para o usuário
-        await emailjs.send(
-          'service_aijwjgr',
-          'template_um1kuwr',
-          confirmationParams,
-          'JPlvEwQI87vaofEIx'
-        )
+        console.log('Iniciando envio do email para a empresa...');
+        console.log('Parâmetros do template:', {
+          ...templateParams,
+          foto_url: fotoUrl ? 'URL da foto presente' : 'Sem foto',
+          documento_url: documentoUrl ? 'URL do documento presente' : 'Sem documento'
+        });
 
+        // Enviar email para a empresa
+        const emailResponse = await emailjs.send(
+          emailjsServiceId,
+          emailjsTemplateId,
+          {
+            ...templateParams,
+            to_email: 'rh@g2ccontabilidade.com.br',
+            from_name: getValue(formData.nome),
+            from_email: getValue(formData.email),
+            reply_to: getValue(formData.email)
+          },
+          emailjsPublicKey
+        );
+
+        console.log('Resposta do EmailJS:', {
+          status: emailResponse.status,
+          text: emailResponse.text,
+          serviceId: emailjsServiceId,
+          templateId: emailjsTemplateId
+        });
+
+        if (emailResponse.status !== 200) {
+          throw new Error(`Erro ao enviar email: ${emailResponse.text}`);
+        }
+
+        // Enviar email de confirmação para o usuário
+        console.log('Iniciando envio do email de confirmação para o usuário...');
+        const userTemplateId = import.meta.env.VITE_EMAILJS_USER_TEMPLATE_ID;
+        if (!userTemplateId) {
+          throw new Error('Template ID do email de confirmação não encontrado');
+        }
+
+        const userEmailResponse = await emailjs.send(
+          emailjsServiceId,
+          userTemplateId,
+          {
+            to_email: getValue(formData.email),
+            to_name: getValue(formData.nome),
+            from_name: 'G2C Contabilidade',
+            from_email: 'rh@g2ccontabilidade.com.br',
+            reply_to: getValue(formData.email),
+            message: 'Confirmação de recebimento do formulário de admissão'
+          },
+          emailjsPublicKey
+        );
+
+        console.log('Resposta do EmailJS (email de confirmação):', {
+          status: userEmailResponse.status,
+          text: userEmailResponse.text
+        });
+
+        if (userEmailResponse.status !== 200) {
+          console.warn('Erro ao enviar email de confirmação:', userEmailResponse.text);
+        }
+
+        // Mostrar mensagem de sucesso
         Swal.fire({
           title: 'Formulário Enviado!',
-          html: 'Suas respostas foram enviadas com sucesso.<br>Verifique sua caixa de entrada.',
+          text: 'Seu formulário foi enviado com sucesso. Em breve entraremos em contato.',
           icon: 'success',
           confirmButtonColor: '#646cff'
         })
+
       } catch (error: unknown) {
         let errorMessage = 'Erro desconhecido ao enviar formulário';
+        let errorDetails = '';
         
         if (error instanceof Error) {
           errorMessage = error.message;
+          errorDetails = error.stack || '';
+        } else if (typeof error === 'object' && error !== null) {
+          errorMessage = JSON.stringify(error);
         }
         
-        console.error('Erro ao enviar formulário:', errorMessage);
+        console.error('Erro ao enviar formulário:', {
+          message: errorMessage,
+          details: errorDetails,
+          error: error
+        });
+        
+        // Verificar se é um erro do EmailJS
+        if (error instanceof Error && error.message.includes('EmailJS')) {
+          console.error('Detalhes do erro EmailJS:', {
+            serviceId: import.meta.env.VITE_EMAILJS_SERVICE_ID,
+            templateId: import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
+            publicKey: import.meta.env.VITE_EMAILJS_PUBLIC_KEY?.substring(0, 5) + '...' // Mostra apenas os primeiros 5 caracteres por segurança
+          });
+        }
         
         Swal.fire({
           title: 'Erro ao Enviar',
@@ -2771,21 +2821,6 @@ function App() {
       </>
     )
   }
-
-  // Função auxiliar para converter arquivo em base64
-  const readFileAsBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64String = reader.result as string;
-        // Remove o prefixo "data:image/jpeg;base64," do resultado
-        const base64 = base64String.split(',')[1];
-        resolve(base64);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  };
 
   return (
     <div className="app-container">

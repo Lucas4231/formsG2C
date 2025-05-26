@@ -119,6 +119,52 @@
           <td style="padding: 8px; border: 1px solid #ddd;"><strong>Carteira de Reservista:</strong></td>
           <td style="padding: 8px; border: 1px solid #ddd;">{{carteiraReservista}} {{^carteiraReservista}}Sem informação{{/carteiraReservista}}</td>
         </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Data de Expedição da CT:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{dataExpedicaoCT}} {{^dataExpedicaoCT}}Sem informação{{/dataExpedicaoCT}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Data de Expedição da CNH:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{dataExpedicaoCNH}} {{^dataExpedicaoCNH}}Sem informação{{/dataExpedicaoCNH}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Data de Validade da CNH:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{dataValidadeCNH}} {{^dataValidadeCNH}}Sem informação{{/dataValidadeCNH}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Data da Primeira Habilitação:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{dataPrimeiraHabilitacao}} {{^dataPrimeiraHabilitacao}}Sem informação{{/dataPrimeiraHabilitacao}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Data de Expedição da Reservista:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{dataExpedicaoReservista}} {{^dataExpedicaoReservista}}Sem informação{{/dataExpedicaoReservista}}</td>
+        </tr>
+      </table>
+
+      <h2 style="font-size: 20px; color: #444; margin-top: 20px; border-bottom: 2px solid #d1d4ff; padding-bottom: 10px;">Documentos Enviados</h2>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Foto:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">
+            {{#foto_url}}
+              <a href="{{foto_url}}" target="_blank">Ver foto</a>
+            {{/foto_url}}
+            {{^foto_url}}
+              Sem foto enviada
+            {{/foto_url}}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Documento de Identidade:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">
+            {{#documento_url}}
+              <a href="{{documento_url}}" target="_blank">Ver documento</a>
+            {{/documento_url}}
+            {{^documento_url}}
+              Sem documento enviado
+            {{/documento_url}}
+          </td>
+        </tr>
       </table>
 
       <h2 style="font-size: 20px; color: #444; margin-top: 20px; border-bottom: 2px solid #d1d4ff; padding-bottom: 10px;">Dados Profissionais</h2>
@@ -179,6 +225,14 @@
           <td style="padding: 8px; border: 1px solid #ddd;"><strong>Valor do Desconto (Combustível):</strong></td>
           <td style="padding: 8px; border: 1px solid #ddd;">{{valorDescontoCombustivel}} {{^valorDescontoCombustivel}}Sem informação{{/valorDescontoCombustivel}}</td>
         </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Quantidade de Passagens:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{quantidade_passagem}} {{^quantidade_passagem}}Sem informação{{/quantidade_passagem}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Observações:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{observacoes}} {{^observacoes}}Sem informação{{/observacoes}}</td>
+        </tr>
       </table>
 
       <h2 style="font-size: 20px; color: #444; margin-top: 20px; border-bottom: 2px solid #d1d4ff; padding-bottom: 10px;">Dados Bancários</h2>
@@ -202,6 +256,10 @@
         <tr>
           <td style="padding: 8px; border: 1px solid #ddd;"><strong>Chave PIX:</strong></td>
           <td style="padding: 8px; border: 1px solid #ddd;">{{chavePix}} {{^chavePix}}Sem informação{{/chavePix}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Observações Bancárias:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{observacoesBancarias}} {{^observacoesBancarias}}Sem informação{{/observacoesBancarias}}</td>
         </tr>
       </table>
 
