@@ -68,12 +68,20 @@
           <td style="padding: 8px; border: 1px solid #ddd;">{{endereco}} {{^endereco}}Sem informação{{/endereco}}</td>
         </tr>
         <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Número:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{numero_endereco}} {{^numero_endereco}}Sem informação{{/numero_endereco}}</td>
+        </tr>
+        <tr>
           <td style="padding: 8px; border: 1px solid #ddd;"><strong>Bairro:</strong></td>
           <td style="padding: 8px; border: 1px solid #ddd;">{{bairro}} {{^bairro}}Sem informação{{/bairro}}</td>
         </tr>
         <tr>
-          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Cidade/UF:</strong></td>
-          <td style="padding: 8px; border: 1px solid #ddd;">{{cidade}}/{{estado}} {{^cidade}}Sem informação{{/cidade}}</td>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Cidade:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{cidade}} {{^cidade}}Sem informação{{/cidade}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>UF:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{estado}} {{^estado}}Sem informação{{/estado}}</td>
         </tr>
         <tr>
           <td style="padding: 8px; border: 1px solid #ddd;"><strong>CEP:</strong></td>
@@ -96,7 +104,7 @@
           <td style="padding: 8px; border: 1px solid #ddd;">{{orgaoExpeditor}} {{^orgaoExpeditor}}Sem informação{{/orgaoExpeditor}}</td>
         </tr>
         <tr>
-          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Data de Expedição:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Data de Expedição RG:</strong></td>
           <td style="padding: 8px; border: 1px solid #ddd;">{{dataExpedicao}} {{^dataExpedicao}}Sem informação{{/dataExpedicao}}</td>
         </tr>
         <tr>
@@ -104,24 +112,16 @@
           <td style="padding: 8px; border: 1px solid #ddd;">{{carteiraTrabalho}} {{^carteiraTrabalho}}Sem informação{{/carteiraTrabalho}}</td>
         </tr>
         <tr>
-          <td style="padding: 8px; border: 1px solid #ddd;"><strong>CNH:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Data de Expedição da CT:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{dataExpedicaoCT}} {{^dataExpedicaoCT}}Sem informação{{/dataExpedicaoCT}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Número da CNH:</strong></td>
           <td style="padding: 8px; border: 1px solid #ddd;">{{cnh}} {{^cnh}}Sem informação{{/cnh}}</td>
         </tr>
         <tr>
           <td style="padding: 8px; border: 1px solid #ddd;"><strong>Categoria CNH:</strong></td>
           <td style="padding: 8px; border: 1px solid #ddd;">{{categoriaCNH}} {{^categoriaCNH}}Sem informação{{/categoriaCNH}}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Título de Eleitor:</strong></td>
-          <td style="padding: 8px; border: 1px solid #ddd;">{{tituloEleitor}} {{^tituloEleitor}}Sem informação{{/tituloEleitor}}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Carteira de Reservista:</strong></td>
-          <td style="padding: 8px; border: 1px solid #ddd;">{{carteiraReservista}} {{^carteiraReservista}}Sem informação{{/carteiraReservista}}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Data de Expedição da CT:</strong></td>
-          <td style="padding: 8px; border: 1px solid #ddd;">{{dataExpedicaoCT}} {{^dataExpedicaoCT}}Sem informação{{/dataExpedicaoCT}}</td>
         </tr>
         <tr>
           <td style="padding: 8px; border: 1px solid #ddd;"><strong>Data de Expedição da CNH:</strong></td>
@@ -136,6 +136,14 @@
           <td style="padding: 8px; border: 1px solid #ddd;">{{dataPrimeiraHabilitacao}} {{^dataPrimeiraHabilitacao}}Sem informação{{/dataPrimeiraHabilitacao}}</td>
         </tr>
         <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Título de Eleitor:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{tituloEleitor}} {{^tituloEleitor}}Sem informação{{/tituloEleitor}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Carteira de Reservista:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{carteiraReservista}} {{^carteiraReservista}}Sem informação{{/carteiraReservista}}</td>
+        </tr>
+        <tr>
           <td style="padding: 8px; border: 1px solid #ddd;"><strong>Data de Expedição da Reservista:</strong></td>
           <td style="padding: 8px; border: 1px solid #ddd;">{{dataExpedicaoReservista}} {{^dataExpedicaoReservista}}Sem informação{{/dataExpedicaoReservista}}</td>
         </tr>
@@ -144,7 +152,7 @@
       <h2 style="font-size: 20px; color: #444; margin-top: 20px; border-bottom: 2px solid #d1d4ff; padding-bottom: 10px;">Documentos Enviados</h2>
       <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
         <tr>
-          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Foto:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Foto para Registro:</strong></td>
           <td style="padding: 8px; border: 1px solid #ddd;">
             {{#foto_url}}
               <a href="{{foto_url}}" target="_blank">Ver foto</a>
@@ -155,7 +163,7 @@
           </td>
         </tr>
         <tr>
-          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Documento de Identidade:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Foto do Documento:</strong></td>
           <td style="padding: 8px; border: 1px solid #ddd;">
             {{#documento_url}}
               <a href="{{documento_url}}" target="_blank">Ver documento</a>
@@ -170,8 +178,12 @@
       <h2 style="font-size: 20px; color: #444; margin-top: 20px; border-bottom: 2px solid #d1d4ff; padding-bottom: 10px;">Dados Profissionais</h2>
       <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
         <tr>
-          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Cargo/Função:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Cargo:</strong></td>
           <td style="padding: 8px; border: 1px solid #ddd;">{{cargo}} {{^cargo}}Sem informação{{/cargo}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Função:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{funcao}} {{^funcao}}Sem informação{{/funcao}}</td>
         </tr>
         <tr>
           <td style="padding: 8px; border: 1px solid #ddd;"><strong>Salário:</strong></td>
@@ -242,8 +254,12 @@
           <td style="padding: 8px; border: 1px solid #ddd;">{{banco}} {{^banco}}Sem informação{{/banco}}</td>
         </tr>
         <tr>
-          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Agência/Conta:</strong></td>
-          <td style="padding: 8px; border: 1px solid #ddd;">{{agencia_conta}} {{^agencia_conta}}Sem informação{{/agencia_conta}}</td>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Agência:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{agencia}} {{^agencia}}Sem informação{{/agencia}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Conta:</strong></td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{conta}} {{^conta}}Sem informação{{/conta}}</td>
         </tr>
         <tr>
           <td style="padding: 8px; border: 1px solid #ddd;"><strong>Tipo de Conta:</strong></td>

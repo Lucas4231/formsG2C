@@ -5,6 +5,8 @@ import logo from './assets/G2C_logo_azul.png'
 import Swal from 'sweetalert2'
 import emailjs from '@emailjs/browser'
 import { uploadToCloudinary } from './cloudinary'
+import { isValid, format } from '@fnando/cpf'
+import axios from 'axios'
 
 interface Dependente {
   nome: string;
@@ -48,6 +50,7 @@ interface FormData {
   carteiraReservista: string;
   dataExpedicaoReservista: string;
   endereco: string;
+  numeroEndereco: string;
   bairro: string;
   cidade: string;
   estado: string;
@@ -55,7 +58,8 @@ interface FormData {
   observacoes: string;
   foto: File | null;
   banco: string;
-  agenciaConta: string;
+  agencia: string;
+  conta: string;
   tipoConta: string;
   tipoChavePix: string;
   chavePix: string;
@@ -66,7 +70,8 @@ interface FormData {
   cpfConjuge: string;
   dataNascimentoConjuge: string;
   responsavelPreenchimento: string;
-  cargoFuncao: string;
+  cargo: string;
+  funcao: string;
   salario: string;
   dataAdmissao: string;
   optanteValeTransporte: string;
@@ -199,9 +204,42 @@ const getResponsavelValue = (value: string, isEmpresa: boolean) => {
   return value;
 };
 
+const validarCPF = (cpfValue: string): { isValid: boolean; message: string } => {
+  try {
+    // Remove caracteres não numéricos
+    const cpfNumerico = cpfValue.replace(/\D/g, '');
+    
+    // Verifica se o CPF tem 11 dígitos
+    if (cpfNumerico.length !== 11) {
+      return {
+        isValid: false,
+        message: 'CPF deve conter 11 dígitos'
+      };
+    }
+
+    // Usa a biblioteca @fnando/cpf para validar
+    const cpfValido = isValid(cpfNumerico);
+    
+    return {
+      isValid: cpfValido,
+      message: cpfValido ? 'CPF válido' : 'CPF inválido'
+    };
+  } catch (error) {
+    console.error('Erro ao validar CPF:', error);
+    return {
+      isValid: false,
+      message: 'Erro ao validar CPF'
+    };
+  }
+};
+
 function App() {
-  const [currentPage, setCurrentPage] = useState(1)
+  const [currentPage, setCurrentPage] = useState(1)!
   const [currentDependenteIndex, setCurrentDependenteIndex] = useState(0)
+  const [isSubmitting, setIsSubmitting] = useState(false)!
+  const [submitTime, setSubmitTime] = useState(0)!
+  const [cpfError, setCpfError] = useState('')
+  const [cepError, setCepError] = useState('')
   const [formData, setFormData] = useState<FormData>({
     nomeEmpresa: '',
     nomeResponsavel: '',
@@ -233,6 +271,7 @@ function App() {
     carteiraReservista: '',
     dataExpedicaoReservista: '',
     endereco: '',
+    numeroEndereco: '',
     bairro: '',
     cidade: '',
     estado: '',
@@ -240,7 +279,8 @@ function App() {
     observacoes: '',
     foto: null,
     banco: '',
-    agenciaConta: '',
+    agencia: '',
+    conta: '',
     tipoConta: '',
     tipoChavePix: '',
     chavePix: '',
@@ -251,7 +291,8 @@ function App() {
     cpfConjuge: '',
     dataNascimentoConjuge: '',
     responsavelPreenchimento: '',
-    cargoFuncao: '',
+    cargo: '',
+    funcao: '',
     salario: '',
     dataAdmissao: '',
     optanteValeTransporte: '',
@@ -270,10 +311,24 @@ function App() {
     concordaTermos: false,
     declaraInformacoes: false,
     documentoIdentidade: null
-  })
+  }!)
 
+  // Efeito para salvar os dados no localStorage sempre que houver alteração
   useEffect(() => {
-    setCurrentPage(1)
+    try {
+      localStorage.setItem('formData', JSON.stringify(formData))
+      localStorage.setItem('currentPage', currentPage.toString())
+    } catch (error) {
+      console.error('Erro ao salvar dados no localStorage:', error)
+    }
+  }, [formData, currentPage])
+
+  // Efeito para recuperar a página atual ao iniciar
+  useEffect(() => {
+    const savedPage = localStorage.getItem('currentPage')
+    if (savedPage) {
+      setCurrentPage(parseInt(savedPage))
+    }
   }, [])
 
   const formatarData = (value: string) => {
@@ -310,6 +365,53 @@ function App() {
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, files } = e.target as HTMLInputElement
 
+    // Se for o campo CEP, busca o endereço
+    if (name === 'cep') {
+      // Remove caracteres não numéricos
+      const numbers = value.replace(/\D/g, '')
+      
+      // Aplica a máscara do CEP
+      let maskedValue = ''
+      if (numbers.length <= 5) {
+        maskedValue = numbers
+      } else {
+        maskedValue = `${numbers.slice(0, 5)}-${numbers.slice(5, 8)}`
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        [name]: maskedValue
+      }))
+
+      // Se o CEP tiver 8 dígitos, busca o endereço
+      if (numbers.length === 8) {
+        buscarCEP(numbers).then(endereco => {
+          if (endereco) {
+            setFormData(prev => ({
+              ...prev,
+              endereco: endereco.logradouro,
+              bairro: endereco.bairro,
+              cidade: endereco.localidade,
+              estado: endereco.uf
+            }))
+          }
+        })
+      } else if (numbers.length === 0) {
+        // Se o CEP for apagado, limpa os campos de endereço e o erro
+        setFormData(prev => ({
+          ...prev,
+          endereco: '',
+          bairro: '',
+          cidade: '',
+          estado: ''
+        }))
+        setCepError('')
+      } else {
+        setCepError('')
+      }
+      return
+    }
+
     // Aplicar máscaras para telefone, celular e CPF
     if (name === 'telefone' || name === 'celular' || name === 'cpf' || name === 'cpfConjuge') {
       // Remove todos os caracteres não numéricos
@@ -318,17 +420,43 @@ function App() {
       // Aplica a máscara apropriada
       let maskedValue = ''
       if (name === 'telefone') {
-        if (numbers.length <= 10) {
-          maskedValue = numbers.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3')
+        // Limita a 10 dígitos para telefone fixo (DDD + 8 dígitos)
+        const telefoneNumbers = numbers.slice(0, 10)
+        if (telefoneNumbers.length <= 2) {
+          maskedValue = telefoneNumbers
+        } else if (telefoneNumbers.length <= 6) {
+          maskedValue = `(${telefoneNumbers.slice(0, 2)}) ${telefoneNumbers.slice(2)}`
         } else {
-          maskedValue = numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')
+          maskedValue = `(${telefoneNumbers.slice(0, 2)}) ${telefoneNumbers.slice(2, 6)}-${telefoneNumbers.slice(6)}`
         }
       } else if (name === 'celular') {
-        maskedValue = numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')
+        // Limita a 11 dígitos para celular (DDD + 9 dígitos)
+        const celularNumbers = numbers.slice(0, 11)
+        if (celularNumbers.length <= 2) {
+          maskedValue = celularNumbers
+        } else if (celularNumbers.length <= 7) {
+          maskedValue = `(${celularNumbers.slice(0, 2)}) ${celularNumbers.slice(2)}`
+        } else {
+          maskedValue = `(${celularNumbers.slice(0, 2)}) ${celularNumbers.slice(2, 7)}-${celularNumbers.slice(7)}`
+        }
       } else if (name === 'cpf' || name === 'cpfConjuge') {
         // Limita a 11 dígitos
         const cpfNumbers = numbers.slice(0, 11)
-        maskedValue = cpfNumbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
+        
+        // Aplica a máscara do CPF usando a biblioteca
+        maskedValue = format(cpfNumbers)
+        
+        // Valida o CPF apenas quando tiver 11 dígitos
+        if (cpfNumbers.length === 11) {
+          const validacao = validarCPF(cpfNumbers)
+          if (!validacao.isValid) {
+            setCpfError(validacao.message)
+          } else {
+            setCpfError('')
+          }
+        } else {
+          setCpfError('')
+        }
       }
 
       setFormData(prev => ({
@@ -445,12 +573,20 @@ function App() {
       return false
     }
 
+    // Validação do CPF
+    const validacaoCPF = validarCPF(formData.cpf)
+    if (!validacaoCPF.isValid) {
+      setCpfError(validacaoCPF.message)
+      return false
+    }
+
     return true
   }
 
   const validatePage3 = () => {
     const requiredFields = {
       endereco: 'Endereço',
+      numeroEndereco: 'Número do Endereço',
       bairro: 'Bairro',
       cidade: 'Cidade',
       estado: 'Estado',
@@ -506,6 +642,20 @@ function App() {
       })
       return false
     }
+
+    // Validação do CPF do dependente
+    const validacaoCPF = validarCPF(dependente.cpf)
+    if (!validacaoCPF.isValid) {
+      Swal.fire({
+        title: 'CPF Inválido',
+        text: validacaoCPF.message,
+        icon: 'warning',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#646cff'
+      })
+      return false
+    }
+
     return true
   }
 
@@ -526,7 +676,8 @@ function App() {
   const validatePage10 = () => {
     // Se o responsável for o empregado, valida apenas os campos básicos
     const requiredFields: Record<string, string> = {
-      cargoFuncao: 'Cargo/Função',
+      cargo: 'Cargo',
+      funcao: 'Função',
       dataAdmissao: 'Data de admissão',
       optanteValeTransporte: 'Optante de vale transporte'
     }
@@ -566,7 +717,8 @@ function App() {
     if (formData.responsavelPreenchimento === 'Empresa') {
       const requiredFields: Record<string, string> = {
         nomeResponsavelPreenchimento: 'Nome do responsável pelo preenchimento',
-        cargoFuncao: 'Cargo/Função',
+        cargo: 'Cargo',
+        funcao: 'Função',
         salario: 'Salário',
         dataAdmissao: 'Data de admissão',
         periodoExperiencia: 'Período de Experiência',
@@ -596,7 +748,8 @@ function App() {
       // Se o responsável for o empregado, valida apenas os campos básicos
       const requiredFields: Record<string, string> = {
         nomeResponsavelPreenchimento: 'Nome do responsável pelo preenchimento',
-        cargoFuncao: 'Cargo/Função',
+        cargo: 'Cargo',
+        funcao: 'Função',
         salario: 'Salário',
         dataAdmissao: 'Data de admissão',
         optanteValeTransporte: 'Optante de vale transporte'
@@ -802,8 +955,8 @@ function App() {
 
   const handleClear = () => {
     Swal.fire({
-      title: 'Limpar Formulário',
-      text: 'Tem certeza que deseja limpar todo o formulário?',
+      title: 'Limpar Campos',
+      text: 'Tem certeza que deseja limpar os campos desta página?',
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Sim, limpar',
@@ -812,87 +965,125 @@ function App() {
       cancelButtonColor: '#6c757d'
     }).then((result) => {
       if (result.isConfirmed) {
-        setFormData({
-          nomeEmpresa: '',
-          nomeResponsavel: '',
-          nome: '',
-          nomeMae: '',
-          nomePai: '',
-          sexo: '',
-          email: '',
-          telefone: '',
-          celular: '',
-          dataNascimento: '',
-          municipioNascimento: '',
-          estadoCivil: '',
-          corPele: '',
-          escolaridade: '',
-          cpf: '',
-          pis: '',
-          docIdentificacao: '',
-          orgaoExpeditor: '',
-          dataExpedicao: '',
-          carteiraTrabalho: '',
-          dataExpedicaoCT: '',
-          cnh: '',
-          categoriaCNH: '',
-          dataExpedicaoCNH: '',
-          dataValidadeCNH: '',
-          dataPrimeiraHabilitacao: '',
-          tituloEleitor: '',
-          carteiraReservista: '',
-          dataExpedicaoReservista: '',
-          endereco: '',
-          bairro: '',
-          cidade: '',
-          estado: '',
-          cep: '',
-          observacoes: '',
-          foto: null,
-          banco: '',
-          agenciaConta: '',
-          tipoConta: '',
-          tipoChavePix: '',
-          chavePix: '',
-          observacoesBancarias: '',
-          possuiDependentes: false,
-          dependentes: [],
-          nomeConjuge: '',
-          cpfConjuge: '',
-          dataNascimentoConjuge: '',
-          responsavelPreenchimento: '',
-          cargoFuncao: '',
-          salario: '',
-          dataAdmissao: '',
-          optanteValeTransporte: '',
-          valorPassagem: '',
-          nomeResponsavelPreenchimento: '',
-          periodoExperiencia: '',
-          jornadaTrabalho: '',
-          jornadaParcial: '',
-          adicionalPericulosidade: '',
-          adicionalInsalubridade: '',
-          quantidadePassagem: '',
-          valeCombustivel: '',
-          valorValeCombustivel: '',
-          tipoDescontoCombustivel: '',
-          valorDescontoCombustivel: '',
-          concordaTermos: false,
-          declaraInformacoes: false,
-          documentoIdentidade: null
-        })
-        setCurrentPage(1)
+        // Limpa apenas os campos da página atual
+        const camposParaLimpar: Record<string, string | null | boolean | Dependente[]> = {};
+        
+        switch (currentPage) {
+          case 1: // Dados da Empresa
+            camposParaLimpar.nomeEmpresa = '';
+            camposParaLimpar.nomeResponsavel = '';
+            break;
+          case 2: // Dados Pessoais
+            camposParaLimpar.nome = '';
+            camposParaLimpar.nomeMae = '';
+            camposParaLimpar.nomePai = '';
+            camposParaLimpar.sexo = '';
+            camposParaLimpar.email = '';
+            camposParaLimpar.telefone = '';
+            camposParaLimpar.celular = '';
+            camposParaLimpar.dataNascimento = '';
+            camposParaLimpar.municipioNascimento = '';
+            camposParaLimpar.estadoCivil = '';
+            camposParaLimpar.corPele = '';
+            camposParaLimpar.escolaridade = '';
+            camposParaLimpar.cpf = '';
+            break;
+          case 3: // Endereço
+            camposParaLimpar.endereco = '';
+            camposParaLimpar.numeroEndereco = '';
+            camposParaLimpar.bairro = '';
+            camposParaLimpar.cidade = '';
+            camposParaLimpar.estado = '';
+            camposParaLimpar.cep = '';
+            break;
+          case 4: // Documentos
+            camposParaLimpar.pis = '';
+            camposParaLimpar.docIdentificacao = '';
+            camposParaLimpar.orgaoExpeditor = '';
+            camposParaLimpar.dataExpedicao = '';
+            camposParaLimpar.carteiraTrabalho = '';
+            camposParaLimpar.dataExpedicaoCT = '';
+            camposParaLimpar.cnh = '';
+            camposParaLimpar.categoriaCNH = '';
+            camposParaLimpar.dataExpedicaoCNH = '';
+            camposParaLimpar.dataValidadeCNH = '';
+            camposParaLimpar.dataPrimeiraHabilitacao = '';
+            camposParaLimpar.tituloEleitor = '';
+            camposParaLimpar.carteiraReservista = '';
+            camposParaLimpar.dataExpedicaoReservista = '';
+            break;
+          case 5: // Dependentes
+            camposParaLimpar.possuiDependentes = false;
+            camposParaLimpar.dependentes = [];
+            break;
+          case 8: // Dados do Cônjuge
+            camposParaLimpar.nomeConjuge = '';
+            camposParaLimpar.cpfConjuge = '';
+            camposParaLimpar.dataNascimentoConjuge = '';
+            break;
+          case 9: // Responsável pelo Preenchimento
+            camposParaLimpar.responsavelPreenchimento = '';
+            break;
+          case 10: // Dados Profissionais (Empregado)
+            camposParaLimpar.cargo = '';
+            camposParaLimpar.funcao = '';
+            camposParaLimpar.salario = '';
+            camposParaLimpar.dataAdmissao = '';
+            camposParaLimpar.optanteValeTransporte = '';
+            camposParaLimpar.valorPassagem = '';
+            break;
+          case 11: // Dados Profissionais (Empresa)
+            camposParaLimpar.nomeResponsavelPreenchimento = '';
+            camposParaLimpar.cargo = '';
+            camposParaLimpar.funcao = '';
+            camposParaLimpar.salario = '';
+            camposParaLimpar.dataAdmissao = '';
+            camposParaLimpar.periodoExperiencia = '';
+            camposParaLimpar.jornadaTrabalho = '';
+            camposParaLimpar.jornadaParcial = '';
+            camposParaLimpar.adicionalPericulosidade = '';
+            camposParaLimpar.adicionalInsalubridade = '';
+            camposParaLimpar.optanteValeTransporte = '';
+            camposParaLimpar.valorPassagem = '';
+            camposParaLimpar.quantidadePassagem = '';
+            camposParaLimpar.valeCombustivel = '';
+            camposParaLimpar.valorValeCombustivel = '';
+            camposParaLimpar.tipoDescontoCombustivel = '';
+            camposParaLimpar.valorDescontoCombustivel = '';
+            break;
+          case 12: // Dados Bancários
+            camposParaLimpar.banco = '';
+            camposParaLimpar.agencia = '';
+            camposParaLimpar.conta = '';
+            camposParaLimpar.tipoConta = '';
+            camposParaLimpar.tipoChavePix = '';
+            camposParaLimpar.chavePix = '';
+            camposParaLimpar.observacoesBancarias = '';
+            break;
+        }
+
+        setFormData(prev => ({
+          ...prev,
+          ...camposParaLimpar
+        }));
+
+        // Se estiver na primeira página, limpa todo o localStorage
+        if (currentPage === 1) {
+          localStorage.removeItem('formData')
+          localStorage.removeItem('currentPage')
+        }
+
         Swal.fire({
-          title: 'Formulário Limpo!',
-          text: 'Todos os campos foram limpos com sucesso.',
+          title: 'Campos Limpos!',
+          text: 'Os campos desta página foram limpos com sucesso.',
           icon: 'success',
           confirmButtonColor: '#646cff',
           timer: 2000,
           showConfirmButton: false
-        })
+        });
       }
-    })
-  }
+    });
+  };
 
   const handleDependenteChange = (index: number, field: keyof Dependente, value: string) => {
     const novosDependentes = [...formData.dependentes]
@@ -912,10 +1103,31 @@ function App() {
     if (field === 'cpf') {
       // Remove todos os caracteres não numéricos
       const numbers = value.replace(/\D/g, '')
-      // Limita a 11 dígitos
+      // Limita a 11 dígitos e aplica a máscara
       const cpfNumbers = numbers.slice(0, 11)
-      // Aplica a máscara
-      value = cpfNumbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
+      if (cpfNumbers.length <= 3) {
+        value = cpfNumbers
+      } else if (cpfNumbers.length <= 6) {
+        value = `${cpfNumbers.slice(0, 3)}.${cpfNumbers.slice(3)}`
+      } else if (cpfNumbers.length <= 9) {
+        value = `${cpfNumbers.slice(0, 3)}.${cpfNumbers.slice(3, 6)}.${cpfNumbers.slice(6)}`
+      } else {
+        value = `${cpfNumbers.slice(0, 3)}.${cpfNumbers.slice(3, 6)}.${cpfNumbers.slice(6, 9)}-${cpfNumbers.slice(9)}`
+      }
+      
+      // Valida o CPF quando tiver 11 dígitos
+      if (cpfNumbers.length === 11) {
+        const validacao = validarCPF(value)
+        if (!validacao.isValid) {
+          Swal.fire({
+            title: 'CPF Inválido',
+            text: validacao.message,
+            icon: 'warning',
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#646cff'
+          })
+        }
+      }
     }
 
     // Aplica máscara para data de nascimento do dependente
@@ -1168,11 +1380,12 @@ function App() {
           type="text"
           id="cpf"
           name="cpf"
-          className="form-input"
+          className={`form-input ${cpfError ? 'error' : ''}`}
           value={formData.cpf}
           onChange={handleInputChange}
           placeholder="000.000.000-00"
         />
+        {cpfError && <span className="error-message">{cpfError}</span>}
       </div>
 
       <div className="button-container">
@@ -1217,7 +1430,7 @@ function App() {
 
       <div className="form-row">
         <div className="form-group">
-          <label htmlFor="docIdentificacao">Documento de Identificação</label>
+          <label htmlFor="docIdentificacao">Documento de Identificação (RG)</label>
           <input
             type="text"
             id="docIdentificacao"
@@ -1241,7 +1454,7 @@ function App() {
           />
         </div>
         <div className="form-group">
-          <label htmlFor="dataExpedicao">Data de Expedição</label>
+          <label htmlFor="dataExpedicao">Data de Expedição (RG)</label>
           <input
             type="text"
             id="dataExpedicao"
@@ -1269,7 +1482,7 @@ function App() {
           />
         </div>
         <div className="form-group">
-          <label htmlFor="dataExpedicaoCT">Data de Expedição</label>
+          <label htmlFor="dataExpedicaoCT">Data de Expedição (CT)</label>
           <input
             type="text"
             id="dataExpedicaoCT"
@@ -1321,7 +1534,7 @@ function App() {
 
       <div className="form-row">
         <div className="form-group">
-          <label htmlFor="dataExpedicaoCNH">Data de Expedição</label>
+          <label htmlFor="dataExpedicaoCNH">Data de Expedição (CNH)</label>
           <input
             type="text"
             id="dataExpedicaoCNH"
@@ -1334,7 +1547,7 @@ function App() {
           />
         </div>
         <div className="form-group">
-          <label htmlFor="dataValidadeCNH">Data de Validade</label>
+          <label htmlFor="dataValidadeCNH">Data de Validade (CNH)</label>
           <input
             type="text"
             id="dataValidadeCNH"
@@ -1347,7 +1560,7 @@ function App() {
           />
         </div>
         <div className="form-group">
-          <label htmlFor="dataPrimeiraHabilitacao">Data da 1ª Habilitação</label>
+          <label htmlFor="dataPrimeiraHabilitacao">Data da 1ª Habilitação (CNH)</label>
           <input
             type="text"
             id="dataPrimeiraHabilitacao"
@@ -1388,7 +1601,7 @@ function App() {
           />
         </div>
         <div className="form-group">
-          <label htmlFor="dataExpedicaoReservista">Data de Expedição</label>
+          <label htmlFor="dataExpedicaoReservista">Data de Expedição (Reservista)</label>
           <input
             type="text"
             id="dataExpedicaoReservista"
@@ -1403,16 +1616,44 @@ function App() {
       </div>
 
       <div className="form-group">
-        <label htmlFor="endereco">Endereço<span className="required-mark">*</span></label>
+        <label htmlFor="cep">CEP<span className="required-mark">*</span></label>
         <input
           type="text"
-          id="endereco"
-          name="endereco"
-          className="form-input"
-          value={formData.endereco}
+          id="cep"
+          name="cep"
+          className={`form-input ${cepError ? 'error' : ''}`}
+          value={formData.cep}
           onChange={handleInputChange}
-          placeholder="Rua, Avenida, etc."
+          placeholder="00000-000"
         />
+        {cepError && <span className="error-message">{cepError}</span>}
+      </div>
+
+      <div className="form-row">
+        <div className="form-group" style={{ flex: 3 }}>
+          <label htmlFor="endereco">Endereço<span className="required-mark">*</span></label>
+          <input
+            type="text"
+            id="endereco"
+            name="endereco"
+            className="form-input"
+            value={formData.endereco}
+            onChange={handleInputChange}
+            placeholder="Rua, Avenida, etc."
+          />
+        </div>
+        <div className="form-group" style={{ flex: 1, marginLeft: '1rem' }}>
+          <label htmlFor="numeroEndereco">Número<span className="required-mark">*</span></label>
+          <input
+            type="text"
+            id="numeroEndereco"
+            name="numeroEndereco"
+            className="form-input"
+            value={formData.numeroEndereco}
+            onChange={handleInputChange}
+            placeholder="Nº"
+          />
+        </div>
       </div>
 
       <div className="form-group">
@@ -1483,19 +1724,6 @@ function App() {
       </div>
 
       <div className="form-group">
-        <label htmlFor="cep">CEP<span className="required-mark">*</span></label>
-        <input
-          type="text"
-          id="cep"
-          name="cep"
-          className="form-input"
-          value={formData.cep}
-          onChange={handleInputChange}
-          placeholder="00000-000"
-        />
-      </div>
-
-      <div className="form-group">
         <label htmlFor="observacoes">Observações</label>
         <textarea
           id="observacoes"
@@ -1562,15 +1790,28 @@ function App() {
       </div>
 
       <div className="form-group">
-        <label htmlFor="agenciaConta">Agência / Conta-Dígito</label>
+        <label htmlFor="agencia">Agência</label>
         <input
           type="text"
-          id="agenciaConta"
-          name="agenciaConta"
+          id="agencia"
+          name="agencia"
           className="form-input"
-          value={formData.agenciaConta}
+          value={formData.agencia}
           onChange={handleInputChange}
-          placeholder="999/999999-9"
+          placeholder="9999"
+        />
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="conta">Conta</label>
+        <input
+          type="text"
+          id="conta"
+          name="conta"
+          className="form-input"
+          value={formData.conta}
+          onChange={handleInputChange}
+          placeholder="99999999-9"
         />
       </div>
 
@@ -1847,7 +2088,20 @@ function App() {
 
   // Página 8 - Dados do Cônjuge
   const validatePage8 = () => {
-    // Removendo a validação obrigatória dos campos do cônjuge
+    // Se tiver preenchido o CPF do cônjuge, valida
+    if (formData.cpfConjuge) {
+      const validacaoCPF = validarCPF(formData.cpfConjuge)
+      if (!validacaoCPF.isValid) {
+        Swal.fire({
+          title: 'CPF Inválido',
+          text: validacaoCPF.message,
+          icon: 'warning',
+          confirmButtonText: 'OK',
+          confirmButtonColor: '#646cff'
+        })
+        return false
+      }
+    }
     return true
   }
 
@@ -1926,15 +2180,28 @@ function App() {
       <p className="required-field">* Indica uma pergunta obrigatória</p>
       
       <div className="form-group">
-        <label htmlFor="cargoFuncao">Cargo/Função<span className="required-mark">*</span></label>
+        <label htmlFor="cargo">Cargo<span className="required-mark">*</span></label>
         <input
           type="text"
-          id="cargoFuncao"
-          name="cargoFuncao"
+          id="cargo"
+          name="cargo"
           className="form-input"
-          value={formData.cargoFuncao}
+          value={formData.cargo}
           onChange={handleInputChange}
-          placeholder="Digite o cargo ou função"
+          placeholder="Digite o cargo"
+        />
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="funcao">Função<span className="required-mark">*</span></label>
+        <input
+          type="text"
+          id="funcao"
+          name="funcao"
+          className="form-input"
+          value={formData.funcao}
+          onChange={handleInputChange}
+          placeholder="Digite a função"
         />
       </div>
 
@@ -2051,15 +2318,28 @@ function App() {
       </div>
 
       <div className="form-group">
-        <label htmlFor="cargoFuncao">Cargo/Função<span className="required-mark">*</span></label>
+        <label htmlFor="cargo">Cargo<span className="required-mark">*</span></label>
         <input
           type="text"
-          id="cargoFuncao"
-          name="cargoFuncao"
+          id="cargo"
+          name="cargo"
           className="form-input"
-          value={formData.cargoFuncao}
+          value={formData.cargo}
           onChange={handleInputChange}
-          placeholder="Digite o cargo ou função"
+          placeholder="Digite o cargo"
+        />
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="funcao">Função<span className="required-mark">*</span></label>
+        <input
+          type="text"
+          id="funcao"
+          name="funcao"
+          className="form-input"
+          value={formData.funcao}
+          onChange={handleInputChange}
+          placeholder="Digite a função"
         />
       </div>
 
@@ -2405,7 +2685,8 @@ function App() {
                   setFormData(prev => ({
                     ...prev,
                     responsavelPreenchimento: e.target.value,
-                    cargoFuncao: '',
+                    cargo: '',
+                    funcao: '',
                     salario: '',
                     dataAdmissao: '',
                     optanteValeTransporte: '',
@@ -2570,17 +2851,14 @@ function App() {
   const renderPage13 = () => {
     const handleSubmit = async () => {
       try {
-        // Upload dos arquivos para o Cloudinary
-        let fotoUrl = '';
-        let documentoUrl = '';
+        setIsSubmitting(true)
+        setSubmitTime(0)
 
-        if (formData.foto) {
-          fotoUrl = await uploadToCloudinary(formData.foto);
-        }
-
-        if (formData.documentoIdentidade) {
-          documentoUrl = await uploadToCloudinary(formData.documentoIdentidade);
-        }
+        // Upload dos arquivos para o Cloudinary em paralelo
+        const [fotoUrl, documentoUrl] = await Promise.all([
+          formData.foto ? uploadToCloudinary(formData.foto) : Promise.resolve(''),
+          formData.documentoIdentidade ? uploadToCloudinary(formData.documentoIdentidade) : Promise.resolve('')
+        ]);
 
         // Função auxiliar para tratar campos vazios
         const getValue = (value: any) => {
@@ -2627,13 +2905,15 @@ function App() {
           carteira_reservista: getValue(formData.carteiraReservista),
           data_expedicao_reservista: getValue(formData.dataExpedicaoReservista),
           endereco: getValue(formData.endereco),
+          numero_endereco: getValue(formData.numeroEndereco),
           bairro: getValue(formData.bairro),
           cidade: getValue(formData.cidade),
           estado: getValue(formData.estado),
           cep: getValue(formData.cep),
           observacoes: getValue(formData.observacoes),
           banco: getValue(formData.banco),
-          agencia_conta: getValue(formData.agenciaConta),
+          agencia: getValue(formData.agencia),
+          conta: getValue(formData.conta),
           tipo_conta: formatSelectValue(formData.tipoConta, 'tipoConta'),
           tipo_chave_pix: formatSelectValue(formData.tipoChavePix, 'tipoChavePix'),
           chave_pix: getValue(formData.chavePix),
@@ -2644,7 +2924,7 @@ function App() {
           cpf_conjuge: getValue(formData.cpfConjuge),
           data_nascimento_conjuge: getValue(formData.dataNascimentoConjuge),
           responsavel_preenchimento: getValue(formData.responsavelPreenchimento),
-          cargo_funcao: getValue(formData.cargoFuncao),
+          cargo_funcao: getValue(formData.cargo + ' ' + formData.funcao),
           salario: getValue(formData.salario),
           data_admissao: getValue(formData.dataAdmissao),
           periodo_experiencia: getResponsavelValue(formatSelectValue(formData.periodoExperiencia, 'periodoExperiencia'), true),
@@ -2686,77 +2966,57 @@ function App() {
           throw new Error('Email do destinatário não configurado');
         }
 
-        console.log('Iniciando envio do email para a empresa...');
-        console.log('Parâmetros do template:', {
-          ...templateParams,
-          foto_url: fotoUrl ? 'URL da foto presente' : 'Sem foto',
-          documento_url: documentoUrl ? 'URL do documento presente' : 'Sem documento'
-        });
+        // Enviar emails em paralelo
+        const [emailResponse, userEmailResponse] = await Promise.all([
+          // Email para a empresa
+          emailjs.send(
+            emailjsServiceId,
+            emailjsTemplateId,
+            {
+              ...templateParams,
+              to_email: 'rh@g2ccontabilidade.com.br',
+              from_name: getValue(formData.nome),
+              from_email: getValue(formData.email),
+              reply_to: getValue(formData.email)
+            },
+            emailjsPublicKey
+          ),
+          // Email de confirmação para o usuário
+          emailjs.send(
+            emailjsServiceId,
+            import.meta.env.VITE_EMAILJS_USER_TEMPLATE_ID,
+            {
+              to_email: getValue(formData.email),
+              to_name: getValue(formData.nome),
+              from_name: 'G2C Contabilidade',
+              from_email: 'rh@g2ccontabilidade.com.br',
+              reply_to: getValue(formData.email),
+              message: 'Confirmação de recebimento do formulário de admissão'
+            },
+            emailjsPublicKey
+          )
+        ]);
 
-        // Enviar email para a empresa
-        const emailResponse = await emailjs.send(
-          emailjsServiceId,
-          emailjsTemplateId,
-          {
-            ...templateParams,
-            to_email: 'rh@g2ccontabilidade.com.br',
-            from_name: getValue(formData.nome),
-            from_email: getValue(formData.email),
-            reply_to: getValue(formData.email)
-          },
-          emailjsPublicKey
-        );
-
-        console.log('Resposta do EmailJS:', {
-          status: emailResponse.status,
-          text: emailResponse.text,
-          serviceId: emailjsServiceId,
-          templateId: emailjsTemplateId
-        });
-
-        if (emailResponse.status !== 200) {
-          throw new Error(`Erro ao enviar email: ${emailResponse.text}`);
+        if (emailResponse.status !== 200 || userEmailResponse.status !== 200) {
+          throw new Error(`Erro ao enviar email: ${emailResponse.text || userEmailResponse.text}`);
         }
 
-        // Enviar email de confirmação para o usuário
-        console.log('Iniciando envio do email de confirmação para o usuário...');
-        const userTemplateId = import.meta.env.VITE_EMAILJS_USER_TEMPLATE_ID;
-        if (!userTemplateId) {
-          throw new Error('Template ID do email de confirmação não encontrado');
-        }
-
-        const userEmailResponse = await emailjs.send(
-          emailjsServiceId,
-          userTemplateId,
-          {
-            to_email: getValue(formData.email),
-            to_name: getValue(formData.nome),
-            from_name: 'G2C Contabilidade',
-            from_email: 'rh@g2ccontabilidade.com.br',
-            reply_to: getValue(formData.email),
-            message: 'Confirmação de recebimento do formulário de admissão'
-          },
-          emailjsPublicKey
-        );
-
-        console.log('Resposta do EmailJS (email de confirmação):', {
-          status: userEmailResponse.status,
-          text: userEmailResponse.text
-        });
-
-        if (userEmailResponse.status !== 200) {
-          console.warn('Erro ao enviar email de confirmação:', userEmailResponse.text);
-        }
+        const endTime = new Date().getTime()
+        const totalTime = (endTime - new Date().getTime()) / 1000 // Tempo em segundos
 
         // Mostrar mensagem de sucesso
         Swal.fire({
           title: 'Formulário Enviado!',
-          text: 'Seu formulário foi enviado com sucesso. Em breve entraremos em contato.',
+          text: `Seu formulário foi enviado com sucesso. Em breve entraremos em contato. Tempo de envio: ${totalTime} segundos`,
           icon: 'success',
           confirmButtonColor: '#646cff'
         })
 
-      } catch (error: unknown) {
+        // Se o envio for bem-sucedido, limpa o localStorage
+        localStorage.removeItem('formData')
+        localStorage.removeItem('currentPage')
+
+      } catch (error) {
         let errorMessage = 'Erro desconhecido ao enviar formulário';
         let errorDetails = '';
         
@@ -2788,8 +3048,26 @@ function App() {
           icon: 'error',
           confirmButtonColor: '#646cff'
         });
+      } finally {
+        setIsSubmitting(false)
+        setSubmitTime(0)
       }
     }
+
+    // Efeito para atualizar o tempo de envio
+    useEffect(() => {
+      let timer: number;
+      if (isSubmitting) {
+        timer = window.setInterval(() => {
+          setSubmitTime(prev => prev + 1);
+        }, 1000);
+      }
+      return () => {
+        if (timer) {
+          clearInterval(timer);
+        }
+      };
+    }, [isSubmitting]);
 
     return (
       <>
@@ -2797,6 +3075,16 @@ function App() {
           <h2 style={{ color: '#333', fontSize: '1.5rem', marginBottom: '1rem' }}>
             Deseja enviar as respostas do formulário?
           </h2>
+          {isSubmitting && (
+            <div style={{ marginTop: '1rem' }}>
+              <p style={{ color: '#666', marginBottom: '0.5rem' }}>
+                Enviando formulário... Por favor, aguarde.
+              </p>
+              <p style={{ color: '#646cff', fontWeight: 'bold' }}>
+                Tempo de envio: {submitTime} segundos
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="button-container">
@@ -2805,6 +3093,7 @@ function App() {
               type="button" 
               className="back-button" 
               onClick={handleBack}
+              disabled={isSubmitting}
             >
               <span style={{ fontSize: '1.2rem' }}>←</span>
               Não, Revisar Respostas
@@ -2813,13 +3102,48 @@ function App() {
               type="button" 
               className="next-button" 
               onClick={handleSubmit}
+              disabled={isSubmitting}
             >
-              Enviar Respostas
+              {isSubmitting ? 'Enviando...' : 'Enviar Respostas'}
             </button>
           </div>
         </div>
       </>
     )
+  }
+
+  // Função para buscar CEP
+  const buscarCEP = async (cep: string) => {
+    try {
+      // Remove caracteres não numéricos
+      const cepNumerico = cep.replace(/\D/g, '')
+      
+      // Verifica se o CEP tem 8 dígitos
+      if (cepNumerico.length !== 8) {
+        setCepError('CEP deve conter 8 dígitos')
+        return null
+      }
+
+      const response = await axios.get(`https://viacep.com.br/ws/${cepNumerico}/json/`)
+      
+      if (response.data.erro) {
+        setCepError('CEP não encontrado')
+        return null
+      }
+
+      setCepError('')
+      return {
+        cep: response.data.cep,
+        logradouro: response.data.logradouro,
+        bairro: response.data.bairro,
+        localidade: response.data.localidade,
+        uf: response.data.uf
+      }
+    } catch (error) {
+      console.error('Erro ao buscar CEP:', error)
+      setCepError('Erro ao buscar CEP')
+      return null
+    }
   }
 
   return (
@@ -2847,7 +3171,9 @@ function App() {
       <footer className="footer">
         <p className="footer-text">Este formulário foi criado por G2C Contabilidade</p>
         <p className="footer-text">Todos os Direitos reservados</p>
-        <img src={logo} alt="G2C Logo" className="footer-logo" />
+        <a href="https://g2ccontabilidade.com.br/" target="_blank" rel="noopener noreferrer">
+          <img src={logo} alt="G2C Logo" className="footer-logo" />
+        </a>
       </footer>
     </div>
   )
