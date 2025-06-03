@@ -12,8 +12,11 @@
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
     "@fnando/cpf": "^1.0.2",
+    "@google-cloud/local-auth": "^3.0.1",
     "axios": "^1.9.0",
     "cloudinary": "^2.6.1",
+    "google-auth-library": "^9.15.1",
+    "googleapis": "^149.0.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "sweetalert2": "^11.21.2"

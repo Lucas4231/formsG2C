@@ -7,6 +7,7 @@ import emailjs from '@emailjs/browser'
 import { uploadToCloudinary } from './cloudinary'
 import { isValid, format } from '@fnando/cpf'
 import axios from 'axios'
+import { appendToSheet } from './googleSheets'
 
 interface Dependente {
   nome: string;
@@ -2859,6 +2860,9 @@ function App() {
           formData.foto ? uploadToCloudinary(formData.foto) : Promise.resolve(''),
           formData.documentoIdentidade ? uploadToCloudinary(formData.documentoIdentidade) : Promise.resolve('')
         ]);
+
+        // Adiciona os dados na planilha do Google
+        await appendToSheet(formData);
 
         // Função auxiliar para tratar campos vazios
         const getValue = (value: any) => {
